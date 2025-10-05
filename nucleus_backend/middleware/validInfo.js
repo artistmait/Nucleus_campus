@@ -1,5 +1,5 @@
 // Validation middleware for signup and login
-export const validateSignup = (req, res, next) => {
+ const validateSignup = (req, res, next) => {
   const { moodle_id, password, role_id, department_id } = req.body;
 
   // Check if required fields are empty
@@ -26,7 +26,7 @@ export const validateSignup = (req, res, next) => {
   next();
 };
 
-export const validateLogin = (req, res, next) => {
+const validateLogin = (req, res, next) => {
   const { moodle_id, password } = req.body;
 
   // Check if fields are empty
@@ -42,3 +42,5 @@ export const validateLogin = (req, res, next) => {
 
   next();
 };
+
+export {validateLogin, validateSignup};

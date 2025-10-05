@@ -1,26 +1,44 @@
-import React, { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
 import Navbar from "../../main/Navbar";
 import Footer from "../../main/Footer";
+import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 export default function MarksheetCorrectionForm() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    studentName: "",
-    studentId: "",
-    email: "",
-    phone: "",
-    semester: "",
+    student_id: "",
+    moodle_id: "",
     department: "",
+    type: "marksheet_correction", // prefilled for this form type
     reason: "",
     documents: null,
   });
 
-  const [openDropdown, setOpenDropdown] = useState(null);
+  
+  const departmentMap = useMemo(
+    () => ({
+      1: "IT",
+    }),
+    []
+  );
 
-  const handleDropdownToggle = (name) => {
-    setOpenDropdown(openDropdown === name ? null : name);
-  };
+  // Autofill student details from logged-in user
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        student_id: user.id || "",
+        moodle_id: user.moodle_id || "",
+        department: user.department_id || "",
+      }));
+    }
+  }, []);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
@@ -29,220 +47,134 @@ export default function MarksheetCorrectionForm() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  // Submit form
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form Submitted:", formData);
+    try {
+      setLoading(true);
+      const payload = {
+        student_id: formData.student_id,
+        type: formData.type,
+        documents: formData.documents,
+        department: formData.department
+      };
+
+      const res = await axios.post(
+        "http://localhost:5000/api/student/submitApplication",
+        payload,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      if (res.data.success) {
+        toast.success("Application Successfully Submitted");
+        setTimeout(() => {
+          navigate("/student/myapplications");
+        }, 1000);
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Reset form
   const handleCancel = () => {
-    setFormData({
-      studentName: "",
-      studentId: "",
-      email: "",
-      phone: "",
-      semester: "",
-      department: "",
+    setFormData((prev) => ({
+      ...prev,
       reason: "",
       documents: null,
-    });
+    }));
   };
-
-  // Dropdown options
-  const semesters = Array.from({ length: 8 }, (_, i) => `${i + 1}`);
-  const departments = ["CS", "IT", "CS-AIML", "CS-DS", "Mechanical", "Civil"];
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-
       <main className="flex-grow w-full max-w-5xl mx-auto px-6 md:px-10 lg:px-14 py-12">
-        {/* Page Title */}
-        <div className="text-center md:text-left mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-indigo-900 mb-3">
-            Marksheet Request
-          </h1>
-          <p className="text-gray-600 text-lg max-w-2xl">
-            Fill in your details below to request a corrected or duplicate marksheet.
-          </p>
-        </div>
+        <ToastContainer position="top-right" autoClose={3000} />
+        <h1 className="text-4xl font-bold text-indigo-900 mb-6">
+          Marksheet Correction Request
+        </h1>
 
-        {/* Required Documents Notice */}
-        <div className="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-900 p-8 rounded-xl mb-12">
-          <h2 className="text-xl font-semibold mb-3">Required Documents</h2>
-          <ul className="list-disc list-inside text-gray-700 space-y-2">
-            <li>Any previous semester marksheet</li>
-            <li>
-              Document showing your full correct name (e.g., hall ticket, admit card)
-            </li>
-            <li>Valid student ID card</li>
-            <li>Fee payment receipt (if applicable)</li>
-          </ul>
-        </div>
-
-        {/* Application Form */}
         <div className="bg-white shadow-xl rounded-2xl p-10">
-          <h2 className="text-2xl font-semibold text-indigo-900 mb-4">
-            Application Form
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Please fill in all required information and upload necessary documents.
-          </p>
-
           <form
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6"
           >
-            {/* Student Name */}
-            <div>
-              <label className="block font-medium mb-2">
-                Student Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="studentName"
-                value={formData.studentName}
-                onChange={handleChange}
-                placeholder="Enter full name"
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
-                required
-              />
-            </div>
-
             {/* Student ID */}
             <div>
-              <label className="block font-medium mb-2">
-                Student ID <span className="text-red-500">*</span>
-              </label>
+              <label className="block font-medium mb-2">Student ID</label>
               <input
                 type="text"
-                name="studentId"
-                value={formData.studentId}
-                onChange={handleChange}
-                placeholder="Enter Student ID"
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
-                required
+                name="student_id"
+                value={formData.student_id}
+                disabled
+                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
               />
             </div>
 
-            {/* Email */}
+            {/* Department */}
             <div>
-              <label className="block font-medium mb-2">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
+              <label className="block font-medium mb-2">Department</label>
+              <select
+                name="department"
+                value={formData.department}
                 onChange={handleChange}
-                placeholder="Enter your email"
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+                className="w-full h-12 px-4 rounded-lg bg-white border border-gray-300"
                 required
-              />
+              >
+                <option value="">Select Department</option>
+                {Object.entries(departmentMap).map(([id, code]) => (
+                  <option key={id} value={id}>
+                    {code}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Phone */}
+            {/* Application Type */}
             <div>
-              <label className="block font-medium mb-2">
-                Phone Number <span className="text-red-500">*</span>
-              </label>
+              <label className="block font-medium mb-2">Application Type</label>
               <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Enter phone number"
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
-                required
+                type="text"
+                name="type"
+                value={formData.type}
+                disabled
+                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
               />
             </div>
-
-            {/* Semester Dropdown */}
-            <div className="relative">
-              <label className="block font-medium mb-2">
-                Semester <span className="text-red-500">*</span>
-              </label>
-              <div
-                className="relative w-full"
-                onClick={() => handleDropdownToggle("semester")}
-              >
-                <select
-                  name="semester"
-                  value={formData.semester}
-                  onChange={handleChange}
-                  onBlur={() => setOpenDropdown(null)}
-                  className="w-full h-12 pl-4 pr-10 rounded-lg bg-gray-100 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer transition"
-                  required
-                >
-                  <option value="">Select Semester</option>
-                  {semesters.map((sem) => (
-                    <option key={sem} value={sem}>
-                      Semester {sem}
-                    </option>
-                  ))}
-                </select>
-                <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
-                  {openDropdown === "semester" ? (
-                    <ChevronUp className="h-5 w-5 transition-transform duration-300" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 transition-transform duration-300" />
-                  )}
-                </span>
-              </div>
-            </div>
-
-            {/* Department Dropdown */}
-            <div className="relative">
-              <label className="block font-medium mb-2">
-                Department <span className="text-red-500">*</span>
-              </label>
-              <div
-                className="relative w-full"
-                onClick={() => handleDropdownToggle("department")}
-              >
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  onBlur={() => setOpenDropdown(null)}
-                  className="w-full h-12 pl-4 pr-10 rounded-lg bg-gray-100 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer transition"
-                  required
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-                <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">
-                  {openDropdown === "department" ? (
-                    <ChevronUp className="h-5 w-5 transition-transform duration-300" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 transition-transform duration-300" />
-                  )}
-                </span>
-              </div>
+            <div>
+              <label className="block font-medium mb-2">Moodle ID</label>
+              <input
+                type="text"
+                name="moodle_id"
+                value={formData.moodle_id}
+                disabled
+                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+              />
             </div>
 
             {/* Reason */}
-            <div className="md:col-span-2">
+            {/* <div className="md:col-span-2">
               <label className="block font-medium mb-2">
-                Reason for Application <span className="text-red-500">*</span>
+                Reason for Application
               </label>
               <textarea
                 name="reason"
                 value={formData.reason}
                 onChange={handleChange}
-                placeholder="Please provide a detailed reason for your application..."
-                className="w-full h-32 px-4 py-3 rounded-lg bg-gray-100 border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none transition"
+                placeholder="Please describe your reason..."
+                className="w-full h-32 px-4 py-3 rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-indigo-500 resize-none"
                 required
               />
-            </div>
+            </div> */}
 
             {/* Upload Documents */}
             <div className="md:col-span-2">
               <label className="block font-medium mb-2">
-                Upload Required Documents <span className="text-red-500">*</span>
+                Upload Required Documents
               </label>
               <label className="flex items-center justify-center w-full h-14 px-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
                 <span className="text-gray-600">
@@ -253,6 +185,7 @@ export default function MarksheetCorrectionForm() {
                   name="documents"
                   onChange={handleChange}
                   className="hidden"
+                  accept="image/jpeg,image/png,application/pdf"
                   required
                 />
               </label>
@@ -269,15 +202,18 @@ export default function MarksheetCorrectionForm() {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                className={`px-6 py-2.5 rounded-lg border ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-indigo-900 text-white hover:bg-indigo-800"
+                }`}
               >
-                Submit
+                {loading ? "Submitting..." : "Submit"}
               </button>
             </div>
           </form>
         </div>
       </main>
-
       <Footer />
     </div>
   );

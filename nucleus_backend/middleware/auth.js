@@ -1,8 +1,5 @@
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
 
-
-dotenv.config();
 
 const authUser = async  (req, res, next) => {
   const { token } = req.headers;
@@ -28,4 +25,4 @@ const authUser = async  (req, res, next) => {
 // }
 // }
 
-export default {authUser};
+export default authUser;
