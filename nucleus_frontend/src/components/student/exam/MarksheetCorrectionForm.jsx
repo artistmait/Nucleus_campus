@@ -4,6 +4,7 @@ import Footer from "../../main/Footer";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 
 export default function MarksheetCorrectionForm() {
   const navigate = useNavigate();
@@ -17,7 +18,6 @@ export default function MarksheetCorrectionForm() {
     documents: null,
   });
 
-  
   const departmentMap = useMemo(
     () => ({
       1: "IT",
@@ -33,8 +33,8 @@ export default function MarksheetCorrectionForm() {
         ...prev,
         student_id: user.id || "",
         moodle_id: user.moodle_id || "",
-        department:departmentMap[user.department_id] || "",
-        department_id:user.department_id || ""
+        department: departmentMap[user.department_id] || "",
+        department_id: user.department_id || "",
       }));
     }
   }, [departmentMap]);
@@ -57,7 +57,7 @@ export default function MarksheetCorrectionForm() {
         student_id: formData.student_id,
         type: formData.type,
         documents: formData.documents,
-        department_id: formData.department_id
+        department_id: formData.department_id,
       };
 
       const res = await axios.post(
@@ -98,6 +98,25 @@ export default function MarksheetCorrectionForm() {
         <h1 className="text-4xl font-bold text-indigo-900 mb-6">
           Marksheet Correction Request
         </h1>
+        {/* Required Documents Info */}
+        <div className="mb-8 bg-indigo-50 border border-indigo-200 rounded-xl p-6">
+          <h2 className="text-xl font-semibold text-indigo-900 mb-2">
+            Required Documents
+          </h2>
+          <ul className="list-disc list-inside text-gray-700 leading-relaxed">
+            <li>Scanned copy of your latest marksheet.</li>
+            {/* <li>
+              Supporting proof (if applicable) such as corrected marks from
+              faculty or HoD.
+            </li>
+            <li>Any official communication or email evidence (if relevant).</li> */}
+          </ul>
+          <p className="mt-3 text-sm text-gray-600 italic">
+            <AlertTriangle className="size-5" /> Ensure all documents are clear and in PDF or image format
+            (JPEG/PNG). Maximum file size: 5MB.
+            <span className="text-red text-sm">Under Testing</span>
+          </p>
+        </div>
 
         <div className="bg-white shadow-xl rounded-2xl p-10">
           <form
@@ -144,8 +163,6 @@ export default function MarksheetCorrectionForm() {
                 className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
               />
             </div>
-
-
 
             {/* Application Type */}
             <div>
