@@ -12,8 +12,8 @@ export default function MarksheetCorrectionForm() {
     student_id: "",
     moodle_id: "",
     department: "",
-    type: "marksheet_correction", // prefilled for this form type
-    reason: "",
+    department_id: "",
+    type: "marksheet_correction",
     documents: null,
   });
 
@@ -33,10 +33,11 @@ export default function MarksheetCorrectionForm() {
         ...prev,
         student_id: user.id || "",
         moodle_id: user.moodle_id || "",
-        department: user.department_id || "",
+        department:departmentMap[user.department_id] || "",
+        department_id:user.department_id || ""
       }));
     }
-  }, []);
+  }, [departmentMap]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -56,7 +57,7 @@ export default function MarksheetCorrectionForm() {
         student_id: formData.student_id,
         type: formData.type,
         documents: formData.documents,
-        department: formData.department
+        department_id: formData.department_id
       };
 
       const res = await axios.post(
@@ -116,7 +117,7 @@ export default function MarksheetCorrectionForm() {
             </div>
 
             {/* Department */}
-            <div>
+            {/* <div>
               <label className="block font-medium mb-2">Department</label>
               <select
                 name="department"
@@ -132,7 +133,19 @@ export default function MarksheetCorrectionForm() {
                   </option>
                 ))}
               </select>
+            </div> */}
+            <div>
+              <label className="block font-medium mb-2">Department</label>
+              <input
+                type="text"
+                name="department"
+                value={formData.department}
+                disabled
+                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+              />
             </div>
+
+
 
             {/* Application Type */}
             <div>

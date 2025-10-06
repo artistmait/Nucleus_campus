@@ -15,16 +15,19 @@ export default function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("role_id");
-    localStorage.removeItem("user_id");
+    localStorage.removeItem("user");
     navigate("/auth/login");
   };
 
   //Role-based navigation logic
   const handleHomeClick = () => {
-    if (roleId === "1" || roleId === '4') navigate("/student/dashboard");
-    else if (roleId === "2") navigate("/incharge/dashboard");
-    else if(roleId ==='3') navigate("/higher-authority/dashboard");
+    const user=localStorage.getItem("user");
+    // console.log("User:", user);
+    const user1 = JSON.parse(user);
+    // console.log("Role ID:", user1.role_id);
+    if (user1.role_id === 1 || roleId === 4) navigate("/student/myapplications");
+    else if (user1.role_id === 2) navigate("/incharge/dashboard");
+    else if(user1.role_id ===3) navigate("/higher-authority/dashboard");
     else navigate("/");
   };
 

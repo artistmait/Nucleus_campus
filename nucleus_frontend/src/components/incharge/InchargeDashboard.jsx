@@ -72,8 +72,8 @@ export default function InchargeDashboard() {
         );
         if (res.data.success) {
           const apps = res.data.applications;
-          setPendingApplications(apps.filter((a) => a.status === "Pending"));
-          setCompletedApplications(apps.filter((a) => a.status !== "Pending"));
+          setPendingApplications(apps.filter((a) => a.status === "pending"));
+          setCompletedApplications(apps.filter((a) => a.status !== "pending"));
         } else toast.error("Failed to fetch applications");
       } catch (err) {
         console.error("Error fetching incharge applications:", err);
@@ -103,7 +103,6 @@ export default function InchargeDashboard() {
     }
   };
 
-  // ✅ Update Priority
   const handlePriorityChange = async (id, newPriority) => {
     try {
       const res = await axios.put(
@@ -147,7 +146,6 @@ export default function InchargeDashboard() {
     }
   };
 
-  // ✅ Stats Section (Dynamic)
   const dynamicStats = [
     {
       title: "Pending Reviews",
@@ -179,7 +177,7 @@ export default function InchargeDashboard() {
     toast.info(`Viewing details for Application ID: ${appId}`);
   };
 
-  // ✅ Filters
+  //Filters
   const [searchId, setSearchId] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
   const [selectedPriority, setSelectedPriority] = useState("All Priorities");
@@ -199,7 +197,7 @@ export default function InchargeDashboard() {
     });
   }, [pendingApplications, selectedDepartment, selectedPriority, searchId]);
 
-  // ✅ Department Overview Placeholder
+  //Department Overview Placeholder
   const departmentOverview = [
     {
       title: "Exam Section",
@@ -276,21 +274,21 @@ export default function InchargeDashboard() {
                       {filteredPending.map((a) => (
                         <tr key={a.id}>
                           <td className="px-6 py-4 text-sm text-gray-900">{a.id}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.student_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{a.student_id}</td>
                           <td className="px-6 py-4 text-sm text-gray-900">{a.type}</td>
                           <td className="px-6 py-4 text-sm">
                             <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${getPriorityColor(a.priority)}`}>
-                              {a.priority}
+                              {a.priority.toUpperCaseCase()}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm font-medium flex space-x-2">
                             <button onClick={() => handleViewDetails(a.id)} className="text-gray-600 hover:text-blue-600">
                               <Eye className="h-5 w-5" />
                             </button>
-                            <button onClick={() => handleUpdateStatus(a.id, "Approved")} className="text-gray-600 hover:text-green-600">
+                            <button onClick={() => handleUpdateStatus(a.id, "approved")} className="text-gray-600 hover:text-green-600">
                               <CheckCircleIcon className="h-5 w-5" />
                             </button>
-                            <button onClick={() => handleUpdateStatus(a.id, "Rejected")} className="text-gray-600 hover:text-red-600">
+                            <button onClick={() => handleUpdateStatus(a.id, "rejected")} className="text-gray-600 hover:text-red-600">
                               <XCircle className="h-5 w-5" />
                             </button>
                           </td>
@@ -317,7 +315,7 @@ export default function InchargeDashboard() {
                       {completedApplications.map((a) => (
                         <tr key={a.id}>
                           <td className="px-6 py-4 text-sm text-gray-900">{a.id}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.student_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{a.student_id}</td>
                           <td className="px-6 py-4 text-sm">
                             <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(a.status)}`}>
                               {a.status}
