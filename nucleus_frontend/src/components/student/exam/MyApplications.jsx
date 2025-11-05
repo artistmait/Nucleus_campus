@@ -4,16 +4,19 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "../../main/Navbar";
 import Footer from "../../main/Footer";
-import ApprovalsTable from "../../ui/ApprovalsTable";
+import Table from "../../ui/ApprovalsTable";
 import StatCard from "../../ui/StatCard";
-import { FileText, Clock, AlertCircle } from "lucide-react";
+import { FileText, Clock, AlertCircle, Pencil } from "lucide-react";
 
 export default function MyApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [newFile, setNewFile] = useState(null);
 
-    const getPriorityColor = (priority) => {
-    const value = (priority || "");
+  const getPriorityColor = (priority) => {
+    const value = (priority || "").toLowerCase();
     switch (value) {
       case "high":
         return "bg-red-100 text-red-700";
@@ -27,7 +30,7 @@ export default function MyApplications() {
   };
 
   const getStatusColor = (status) => {
-    const value = (status || "");
+    const value = (status || "").toLowerCase();
     switch (value) {
       case "approved":
         return "bg-green-100 text-green-700";
@@ -39,7 +42,6 @@ export default function MyApplications() {
         return "bg-gray-100 text-gray-700";
     }
   };
-
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -76,6 +78,123 @@ export default function MyApplications() {
   const critical = applications.filter(
     (a) => a.priority === "critical" || a.priority === "high"
   ).length;
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "—";
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const openUploadModal = (application) => {
+    setSelectedApp(application);
+    setIsUploadModalOpen(true);
+  };
+
+  const closeUploadModal = () => {
+    setIsUploadModalOpen(false);
+    setSelectedApp(null);
+    setNewFile(null);
+  };
+
+  const handleFileChange = (e) => {
+    setNewFile(e.target.files[0]);
+  };
+
+  const handleUpload = async () => {
+    if (!newFile || !selectedApp) return toast.error("Please select a file.");
+
+    const formData = new FormData();
+    formData.append("documents", newFile);
+
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/student/updateDocument/${selectedApp.application_id}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      if (res.data.success) {
+        toast.success("Document updated successfully!");
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.application_id === selectedApp.application_id
+              ? { ...app, cloudinary_url: res.data.newUrl }
+              : app
+          )
+        );
+        closeUploadModal();
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Upload failed.");
+    }
+  };
+
+  const columns = [
+    { key: "application_id", header: "Application ID", sortable: true },
+    { key: "type", header: "Request Type", sortable: true },
+    { key: "incharge_id", header: "Incharge assigned ID", sortable: true },
+    {
+      key: "deadline",
+      header: "Deadline",
+      sortable: true,
+      render: (val) => formatDate(val),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      render: (val) => (
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+            val
+          )}`}
+        >
+          {val}
+        </span>
+      ),
+    },
+    {
+      key: "priority",
+      header: "Priority",
+      sortable: true,
+      render: (val) => (
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
+            val
+          )}`}
+        >
+          {val}
+        </span>
+      ),
+    },
+    {
+      key: "app_notes",
+      header: "Incharge Notes",
+      render: (value) => (
+        <p className="text-gray-700 text-sm">{value || "No notes added"}</p>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (value, application) => (
+        <button
+          onClick={() => openUploadModal(application)}
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
+          <Pencil className="h-5 w-5" />
+        </button>
+      ),
+    },
+  ];
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-gray-50">
@@ -124,36 +243,47 @@ export default function MyApplications() {
               />
             </div>
 
-            {/* Applications Table */}
-            <ApprovalsTable
-              applications={applications.map((app) => ({
-                id: app.application_id,
-                student:`You`,
-                requestType: app.type.replace("_", " "),
-                department: app.department_name || "IT",
-                approvalStage: (
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                      app.status
-                    )}`}
-                  >
-                    {app.status}
-                  </span>
-                ),
-                priority: (
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
-                      app.priority
-                    )}`}
-                  >
-                    {app.priority}
-                  </span>
-                ),
-              }))}
+            {/* Reusable Table Component */}
+            <Table
+              data={applications}
+              columns={columns}
+              searchPlaceholder="Search applications..."
+              defaultItemsPerPage={10}
             />
           </>
         )}
       </main>
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-xl p-6 shadow-lg w-96">
+            <h2 className="text-xl font-semibold mb-4 text-indigo-900">
+              Upload New Document
+            </h2>
+
+            <input
+              type="file"
+              accept=".pdf,.jpg,.png"
+              onChange={handleFileChange}
+              className="block w-full border border-gray-300 rounded-md p-2 mb-4"
+            />
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeUploadModal}
+                className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpload}
+                className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

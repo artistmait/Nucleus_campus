@@ -5,23 +5,26 @@ import fs from "fs";
 export const submitApplication = async (req, res) => {
   const client = await pool.connect();
   try {
-    const { student_id, type,department_id } = req.body;
+    const { student_id, type, department_id } = req.body;
 
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "Document is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Document is required" });
     }
 
     // Upload to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(req.file.path, {
       folder: "nucleus/student-documents",
       resource_type: "auto",
+      access_mode: "public",
     });
 
     fs.unlinkSync(req.file.path);
 
     await client.query("BEGIN");
 
-    // Step 1️⃣ → Insert into documents table
+    // Insert into documents table
     const documentInsert = await client.query(
       `INSERT INTO documents (student_id, document_type, cloudinary_url)
        VALUES ($1, $2, $3)
@@ -31,7 +34,7 @@ export const submitApplication = async (req, res) => {
 
     const document_id = documentInsert.rows[0].id;
 
-    // Step 2️⃣ → Assign random incharge
+    //Assign random incharge
     const incharge = await client.query(
       "SELECT id FROM users WHERE role_id = 2 ORDER BY RANDOM() LIMIT 1"
     );
@@ -47,11 +50,25 @@ export const submitApplication = async (req, res) => {
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + 7); // 7-day deadline
 
+    const seqResult = await client.query(
+      "SELECT nextval('application_seq') AS seq"
+    );
+    const seq = seqResult.rows[0].seq;
+    const newapp_id = `APN-${String(seq).padStart(4, "0")}`;
+
     const newApp = await client.query(
-      `INSERT INTO applications (student_id, incharge_id, document_id, type, status, priority, deadline,department_id)
-       VALUES ($1, $2, $3, $4, 'pending', 'normal', $5,$6)
+      `INSERT INTO applications (student_id, incharge_id, document_id, type, status, priority, deadline,department_id,application_id)
+       VALUES ($1, $2, $3, $4, 'pending', 'normal', $5,$6,$7)
        RETURNING *`,
-      [student_id, incharge_id, document_id, type, deadline,department_id]
+      [
+        student_id,
+        incharge_id,
+        document_id,
+        type,
+        deadline,
+        department_id,
+        newapp_id,
+      ]
     );
 
     await client.query("COMMIT");
@@ -77,13 +94,14 @@ export const getMyApplications = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT 
-         a.id AS application_id,
+         a.application_id AS application_id,
          a.type,
          a.status,
          a.priority,
          a.deadline,
          a.created_at,
          a.incharge_id,
+         a.app_notes,
          d.cloudinary_url,
          d.document_type
        FROM applications a
@@ -104,5 +122,66 @@ export const getMyApplications = async (req, res) => {
       success: false,
       message: "Failed to fetch applications",
     });
+  }
+};
+
+//update documents
+export const updateMyApplicationDocument = async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { application_id } = req.params;
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "File is required" });
+    }
+
+    // Upload new file to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "nucleus/student-documents",
+      resource_type: "auto",
+      access_mode: "public",
+    });
+
+    fs.unlinkSync(req.file.path);
+
+    await client.query("BEGIN");
+
+    // Create new document entry
+    const documentInsert = await client.query(
+      `INSERT INTO documents (student_id, document_type, cloudinary_url)
+   SELECT a.student_id, d.document_type, $1
+   FROM applications a
+   JOIN documents d ON a.document_id = d.id
+   WHERE a.application_id = $2
+   RETURNING *`,
+      [uploadResult.secure_url, application_id]
+    );
+
+    const newDocumentId = documentInsert.rows[0].id;
+
+    // Update the application with the new document id
+    await client.query(
+      `UPDATE applications SET document_id = $1 WHERE application_id = $2`,
+      [newDocumentId, application_id]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      success: true,
+      message: "Document updated successfully",
+      newUrl: uploadResult.secure_url,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error updating document:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update document" });
+  } finally {
+    client.release();
   }
 };

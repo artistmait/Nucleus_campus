@@ -6,18 +6,23 @@ export const getDepartmentApplications = async (req, res) => {
   try {
     const query = `
       SELECT 
-        a.id,
+        a.application_id,
         a.type,
         a.status,
         a.priority,
         a.deadline,
         a.created_at,
         a.student_id,
+        u.moodle_id,
+        u.username,
         doc.document_type,
-        doc.cloudinary_url
+        doc.cloudinary_url,
+        inc.id AS incharge_id,
+        inc.username AS incharge_name
       FROM applications a
       LEFT JOIN users u ON a.student_id = u.id
       LEFT JOIN department d ON a.department_id = d.id
+      LEFT JOIN users inc ON a.incharge_id = inc.id
       LEFT JOIN documents doc ON a.document_id = doc.id
       WHERE a.department_id = $1
       ORDER BY a.created_at DESC;

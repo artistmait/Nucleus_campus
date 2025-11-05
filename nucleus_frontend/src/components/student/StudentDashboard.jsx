@@ -96,7 +96,7 @@ const LandingPage = () => {
           </div>
           <div className="rounded-lg overflow-hidden shadow-lg">
             <img
-              src="https://via.placeholder.com/500x300"
+              src="/assets/study_one.jpg"
               alt="Campus"
               className="object-cover w-full h-full"
             />

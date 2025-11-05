@@ -1,9 +1,9 @@
 // Validation middleware for signup and login
  const validateSignup = (req, res, next) => {
-  const { moodle_id, password, role_id, department_id } = req.body;
+  const { moodle_id,username, user_email, password, role_id, department_id } = req.body;
 
   // Check if required fields are empty
-  if (!moodle_id || !password || !role_id || !department_id) {
+  if (!moodle_id || !password || !role_id || !department_id || !username || !user_email) {
     return res.status(401).json({ success: false, message: "Invalid credentials. All fields are required." });
   }
 
@@ -23,21 +23,26 @@
     });
   }
 
+  //email validation
+  let Emailregex = new RegExp('[a-z0-9]+@apsit.edu.in');
+  //let testEmails = ["notanemail.com", "workingexample@stackabuse.com", "not_working@apsit.edu.in"];
+ if(!Emailregex.test(user_email)){
+  return res.status(401).json({
+    success: false,
+    message:"Only college email ID is permissible"
+  });
+ }
+
+
   next();
 };
 
 const validateLogin = (req, res, next) => {
-  const { moodle_id, password } = req.body;
+  const { user_email, password } = req.body;
 
   // Check if fields are empty
-  if (!moodle_id || !password) {
+  if (!user_email || !password) {
     return res.status(401).json({ success: false, message: "Invalid credentials. Fields cannot be empty." });
-  }
-
-  // Moodle ID must be only numbers
-  const moodleRegex = /^[0-9]+$/;
-  if (!moodleRegex.test(moodle_id)) {
-    return res.status(401).json({ success: false, message: "Moodle ID must contain only numbers." });
   }
 
   next();

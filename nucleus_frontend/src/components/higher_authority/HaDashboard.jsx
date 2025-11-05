@@ -1,24 +1,85 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
-import ApprovalsTable from "../ui/ApprovalsTable";
-import StatCard from "../ui/StatCard";
+import { toast, ToastContainer } from "react-toastify";
+import {
+  FileText,
+  Clock,
+  CheckCircle as CheckCircleIcon,
+  TrendingUp,
+  Eye,
+  XCircle,
+  User2Icon,
+} from "lucide-react";
 import Navbar from "../main/Navbar";
 import Footer from "../main/Footer";
-import { CircleCheck, Clock, CpuIcon, User2Icon } from "lucide-react";
-import { useCallback } from "react";
+import Table from "../ui/ApprovalsTable";
+import "react-toastify/dist/ReactToastify.css";
 
-const HaDashboard = () => {
+//Stat Card Component
+const StatCard = ({ title, icon: IconComponent, value, iconBgColor }) => (
+  <div className="bg-white p-5 rounded-xl border border-gray-200 flex justify-between items-center">
+    <div>
+      <p className="text-sm text-gray-500">{title}</p>
+      <p className="text-3xl font-bold text-gray-800">{value}</p>
+    </div>
+    <div className={`p-3 rounded-full ${iconBgColor}`}>
+      {IconComponent ? (
+        <IconComponent className="h-6 w-6 text-gray-700" />
+      ) : null}
+    </div>
+  </div>
+);
+
+//Department Overview Card
+const DepartmentCard = ({
+  title,
+  pending,
+  approved,
+  rejected,
+  total,
+  onViewDetails,
+}) => (
+  <div className="bg-white p-6 rounded-xl border border-gray-200 flex flex-col">
+    <div className="flex-grow">
+      <h3 className="font-bold text-lg text-gray-800">{title}</h3>
+      <div className="space-y-3 text-sm mt-4">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Total</span>
+          <span className="font-semibold text-gray-800">{total}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Pending</span>
+          <span className="font-semibold text-yellow-600">{pending}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Approved</span>
+          <span className="font-semibold text-green-600">{approved}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Rejected</span>
+          <span className="font-semibold text-red-600">{rejected}</span>
+        </div>
+      </div>
+    </div>
+    <button
+      onClick={onViewDetails}
+      className="mt-6 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors"
+    >
+      View Details
+    </button>
+  </div>
+);
+
+export default function HodDashboard() {
+  const [activeTab, setActiveTab] = useState("pending");
   const [applications, setApplications] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
-  const [searchId, setSearchId] = useState("");
-  const [selectedPriority, setSelectedPriority] = useState("All Priorities");
+  const [loading, setLoading] = useState(true);
 
-  // Get department_id from localStorage (assuming you stored it after login)
   const user = JSON.parse(localStorage.getItem("user"));
   const department_id = user?.department_id;
 
-   const fetchApplications = useCallback(async () => {
+  const fetchApplications = useCallback(async () => {
+    if (!department_id) return;
     try {
       const res = await axios.get(
         `http://localhost:5000/api/higher-authority/getApplications/${department_id}`
@@ -26,109 +87,240 @@ const HaDashboard = () => {
       if (res.data.success) {
         setApplications(res.data.applications);
       } else {
-        toast.error("Failed to load applications");
+        toast.error("Failed to load department applications");
       }
     } catch (error) {
       console.error("Error fetching department applications:", error);
       toast.error("Server error while loading applications");
+    } finally {
+      setLoading(false);
     }
-  }, [department_id]); // depends on department_id only
+  }, [department_id]);
 
-  //
   useEffect(() => {
-    if (department_id) fetchApplications();
-  }, [department_id, fetchApplications]);
+    fetchApplications();
+  }, [fetchApplications]);
 
-  const departments = ["All Departments", ...new Set(applications.map(app => app.department_name))];
-  const priorities = ["All Priorities", ...new Set(applications.map(app => app.priority))];
+  const pendingApplications = useMemo(
+    () => applications.filter((a) => a.status === "Pending"),
+    [applications]
+  );
+  const completedApplications = useMemo(
+    () => applications.filter((a) => a.status !== "Pending"),
+    [applications]
+  );
 
-  const filteredApplications = useMemo(() => {
-    return applications.filter(app => {
-      const matchDept =
-        selectedDepartment === "All Departments" || app.department_name === selectedDepartment;
-      const matchId =
-        searchId.trim() === "" || app.id.toString().toLowerCase().includes(searchId.toLowerCase());
-      const matchPriority =
-        selectedPriority === "All Priorities" || app.priority === selectedPriority;
+  // 🔹 Color helpers
+  const getPriorityColor = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case "high":
+        return "bg-red-100 text-red-700";
+      case "medium":
+        return "bg-yellow-100 text-yellow-700";
+      case "low":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
 
-      return matchDept && matchId && matchPriority;
-    });
-  }, [applications, selectedDepartment, searchId, selectedPriority]);
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "approved":
+        return "bg-green-100 text-green-700";
+      case "rejected":
+        return "bg-red-100 text-red-700";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
 
-  // Optional sample stats (replace with dynamic later)
-  const statsData = [
-    { title: "Total Applications", value: applications.length, icon: <User2Icon size={24} /> },
-    { title: "Pending", value: applications.filter(a => a.status === "Pending").length, icon: <Clock size={24} /> },
-    { title: "Approved", value: applications.filter(a => a.status === "Approved").length, icon: <CircleCheck size={24} /> },
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "—";
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-GB");
+  };
+
+  //Columns
+  const columns = [
+    { key: "application_id", header: "Application ID" },
+    { key: "username", header: "Student Name" },
+    { key: "document_type", header: "Document Type" },
+    { key: "incharge_name", header: "Assigned Incharge Name" },
+    { key: "incharge_id", header: "Incharge ID" },
+    {
+      key: "priority",
+      header: "Priority",
+      render: (val) => (
+        <span
+          className={`px-2 inline-flex text-xs font-semibold rounded-full ${getPriorityColor(
+            val
+          )}`}
+        >
+          {val}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (val) => (
+        <span
+          className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(
+            val
+          )}`}
+        >
+          {val}
+        </span>
+      ),
+    },
+    {
+      key: "created_at",
+      header: "Date Submitted",
+      render: (val) => formatDate(val),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (_, row) => (
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              const url = row.cloudinary_url;
+              if (!url) return toast.error("No document available");
+              window.open(url, "_blank");
+            }}
+            className="text-gray-600 hover:text-blue-600"
+          >
+            <Eye className="h-5 w-5" />
+          </button>
+        </div>
+      ),
+    },
+    {
+      key: "app_notes",
+      header: "Incharge Notes",
+      render: (value) => (
+        <p className="text-gray-700 text-sm">{value || "No notes added"}</p>
+      ),
+    },
   ];
+
+  //Department summary for overview tab
+  const departmentStats = useMemo(() => {
+    const grouped = {};
+    applications.forEach((app) => {
+      const dept = app.department_name || "Unknown";
+      if (!grouped[dept])
+        grouped[dept] = { total: 0, pending: 0, approved: 0, rejected: 0 };
+      grouped[dept].total++;
+      grouped[dept][app.status.toLowerCase()]++;
+    });
+    return Object.entries(grouped).map(([dept, stats]) => ({
+      title: dept,
+      ...stats,
+    }));
+  }, [applications]);
 
   return (
     <>
       <Navbar />
-      <div className="bg-gray-100 min-h-screen p-4 sm:p-6 lg:p-8">
+      <ToastContainer position="top-center" />
+      <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
         <div className="max-w-7xl mx-auto">
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">Higher Authority Dashboard</h1>
-              <p className="text-md text-gray-500 mt-1">View all applications from your department</p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Search by Application ID"
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-                className="bg-white border border-gray-300 text-gray-700 rounded-md py-2 px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-
-              <select
-                aria-label="Filter by department"
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="bg-white border border-gray-300 text-gray-700 rounded-md py-2 px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
-
-              <select
-                aria-label="Filter by priority"
-                value={selectedPriority}
-                onChange={(e) => setSelectedPriority(e.target.value)}
-                className="bg-white border border-gray-300 text-gray-700 rounded-md py-2 px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {priorities.map(pri => (
-                  <option key={pri} value={pri}>{pri}</option>
-                ))}
-              </select>
-
-              <button
-                onClick={() => {
-                  setSelectedDepartment("All Departments");
-                  setSearchId("");
-                  setSelectedPriority("All Priorities");
-                }}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300"
-              >
-                Clear
-              </button>
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+            <div className="flex-grow">
+              <h1 className="text-3xl font-bold text-gray-900">
+                Head of Department Dashboard
+              </h1>
+              <p className="text-md text-gray-600 mt-1">
+                Manage and review applications from your department
+              </p>
             </div>
           </header>
 
-          <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
-            {statsData.map((stat, index) => <StatCard key={index} {...stat} />)}
-          </section>
+          {/* Stats Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[
+              {
+                title: "Total Applications",
+                value: applications.length.toString(),
+                icon: FileText,
+                iconBgColor: "bg-blue-100",
+              },
+              {
+                title: "Pending",
+                value: pendingApplications.length.toString(),
+                icon: Clock,
+                iconBgColor: "bg-yellow-100",
+              },
+              {
+                title: "Approved",
+                value: completedApplications
+                  .filter((a) => a.status === "Approved")
+                  .length.toString(),
+                icon: CheckCircleIcon,
+                iconBgColor: "bg-green-100",
+              },
+              {
+                title: "Rejected",
+                value: completedApplications
+                  .filter((a) => a.status === "Rejected")
+                  .length.toString(),
+                icon: XCircle,
+                iconBgColor: "bg-red-100",
+              },
+            ].map((stat, i) => (
+              <StatCard key={i} {...stat} />
+            ))}
+          </div>
 
-          <section>
-            <ApprovalsTable applications={filteredApplications} />
-          </section>
+          {/* Tabs */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-6">
+              {["pending", "completed", "overview"].map((tab) => (
+                <button
+                  key={tab}
+                  className={`py-3 px-1 border-b-2 text-sm font-semibold ${
+                    activeTab === tab
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            {loading ? (
+              <p className="text-gray-500 text-center py-8">
+                Loading applications...
+              </p>
+            ) : activeTab === "pending" ? (
+              <Table data={pendingApplications} columns={columns} />
+            ) : activeTab === "completed" ? (
+              <Table data={completedApplications} columns={columns} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {departmentStats.map((dept, i) => (
+                  <DepartmentCard
+                    key={i}
+                    {...dept}
+                    onViewDetails={() => toast.info(`Viewing ${dept.title}`)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <Footer />
     </>
   );
-};
-
-export default HaDashboard;
+}

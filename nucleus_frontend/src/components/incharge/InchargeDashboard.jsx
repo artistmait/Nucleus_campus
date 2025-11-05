@@ -9,12 +9,14 @@ import {
   TrendingUp,
   Eye,
   XCircle,
+  Pencil,
 } from "lucide-react";
 import Navbar from "../main/Navbar";
 import Footer from "../main/Footer";
+import Table from "../ui/ApprovalsTable";
 import "react-toastify/dist/ReactToastify.css";
 
-// ✅ Stat Card Component
+//Stat Card Component
 const StatCard = ({ title, value, icon: Icon, iconBgColor }) => (
   <div className="bg-white p-5 rounded-xl border border-gray-200 flex justify-between items-center">
     <div>
@@ -27,8 +29,14 @@ const StatCard = ({ title, value, icon: Icon, iconBgColor }) => (
   </div>
 );
 
-// ✅ Department Overview Card
-const DepartmentCard = ({ title, description, pending, thisWeek, onViewDetails }) => (
+//Department Overview Card
+const DepartmentCard = ({
+  title,
+  description,
+  pending,
+  thisWeek,
+  onViewDetails,
+}) => (
   <div className="bg-white p-6 rounded-xl border border-gray-200 flex flex-col">
     <div className="flex-grow">
       <h3 className="font-bold text-lg text-gray-800">{title}</h3>
@@ -58,13 +66,18 @@ export default function InchargeDashboard() {
   const [pendingApplications, setPendingApplications] = useState([]);
   const [completedApplications, setCompletedApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [selectedAppForNotes, setSelectedAppForNotes] = useState(null);
+  const [noteText, setNoteText] = useState("");
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
-        if (!user) {
-          toast.error("Please log in to view your applications.");
-          return;
-        }
+    if (!user) {
+      toast.error("Please log in to view your applications.");
+      return;
+    }
+
     const fetchApplications = async () => {
       try {
         const res = await axios.get(
@@ -85,16 +98,18 @@ export default function InchargeDashboard() {
     fetchApplications();
   }, []);
 
-  // ✅ Update Status
-  const handleUpdateStatus = async (id, newStatus) => {
+  //Update Status
+  const handleUpdateStatus = async (application_id, newStatus) => {
     try {
       const res = await axios.put(
-        `http://localhost:5000/api/incharge/updateApplication/${id}`,
+        `http://localhost:5000/api/incharge/updateApplication/${application_id}`,
         { status: newStatus }
       );
       if (res.data.success) {
         toast.success(`Application ${newStatus}!`);
-        setPendingApplications((prev) => prev.filter((a) => a.id !== id));
+        setPendingApplications((prev) =>
+          prev.filter((a) => a.application_id !== application_id)
+        );
         setCompletedApplications((prev) => [...prev, res.data.application]);
       } else toast.error("Failed to update application");
     } catch (err) {
@@ -103,25 +118,10 @@ export default function InchargeDashboard() {
     }
   };
 
-  const handlePriorityChange = async (id, newPriority) => {
-    try {
-      const res = await axios.put(
-        `http://localhost:5000/api/incharge/updateApplication/${id}`,
-        { priority: newPriority }
-      );
-      if (res.data.success) {
-        toast.success("Priority updated!");
-        setPendingApplications((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, priority: newPriority } : a))
-        );
-      }
-    } catch (err) {
-      console.error("Error updating priority:", err);
-      toast.error("Failed to update priority.");
-    }
+  const handleViewDetails = (appId) => {
+    toast.info(`Viewing details for Application ID: ${appId}`);
   };
 
-  // ✅ Utility: Badge Colors
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
       case "high":
@@ -132,6 +132,26 @@ export default function InchargeDashboard() {
         return "bg-green-100 text-green-700";
       default:
         return "bg-gray-100 text-gray-700";
+    }
+  };
+  const handleUpdateNotes = async (application_id, app_notes) => {
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/incharge/updateNotes/${application_id}`,
+        { app_notes:app_notes }
+      );
+      if (res.data.success) {
+        toast.success("Notes saved successfully!");
+        // Optionally update local state
+        setPendingApplications((prev) =>
+          prev.map((a) =>
+            a.application_id === application_id ? { ...a, app_notes } : a
+          )
+        );  
+      }
+    } catch (err) {
+      console.error("Error saving notes:", err);
+      toast.error("Failed to save notes");
     }
   };
 
@@ -145,57 +165,153 @@ export default function InchargeDashboard() {
         return "bg-gray-100 text-gray-700";
     }
   };
+  const openNotesModal = (application) => {
+    setSelectedAppForNotes(application);
+    setNoteText(application.notes || "");
+    setIsNotesModalOpen(true);
+  };
 
-  const dynamicStats = [
+  const closeNotesModal = () => {
+    setIsNotesModalOpen(false);
+    setSelectedAppForNotes(null);
+    setNoteText("");
+  };
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "—";
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+  //Columns for Table
+  const pendingColumns = [
+    { key: "application_id", header: "Application ID", sortable: true },
+    { key: "moodle_id", header: "Student ID", sortable: true },
+    { key: "student_name", header: "Student Name", sortable: true },
     {
-      title: "Pending Reviews",
-      value: pendingApplications.length.toString(),
-      icon: Clock,
-      iconBgColor: "bg-yellow-100",
+      key: "created_at",
+      header: "Application Submission Date",
+      sortable: true,
+      render: (val) => formatDate(val),
     },
     {
-      title: "Completed This Week",
-      value: completedApplications.length.toString(),
-      icon: CheckCircleIcon,
-      iconBgColor: "bg-green-100",
+      key: "deadline",
+      header: "Application Deadline",
+      sortable: true,
+      render: (val) => formatDate(val),
+    },
+    { key: "type", header: "Type" },
+    {
+      key: "priority",
+      header: "Priority",
+      render: (value) => (
+        <span
+          className={`px-2 inline-flex text-xs font-semibold rounded-full ${getPriorityColor(
+            value
+          )}`}
+        >
+          {value}
+        </span>
+      ),
     },
     {
-      title: "Total Applications",
-      value: (pendingApplications.length + completedApplications.length).toString(),
-      icon: FileText,
-      iconBgColor: "bg-blue-100",
+      key: "actions",
+      header: "Actions",
+      render: (_, row) => (
+        <div className="flex space-x-2">
+          <button
+            onClick={() => window.open(row.cloudinary_url, "_blank")}
+            className="text-gray-600 hover:text-blue-600"
+          >
+            <Eye className="h-5 w-5" />
+          </button>
+
+          <button
+            onClick={() => handleUpdateStatus(row.application_id, "approved")}
+            className="text-gray-600 hover:text-green-600"
+          >
+            <CheckCircleIcon className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => handleUpdateStatus(row.application_id, "rejected")}
+            className="text-gray-600 hover:text-red-600"
+          >
+            <XCircle className="h-5 w-5" />
+          </button>
+        </div>
+      ),
     },
     {
-      title: "Avg. Processing Time",
-      value: "2.1 days",
-      icon: TrendingUp,
-      iconBgColor: "bg-indigo-100",
+      key: "notes",
+      header: "Notes / Comments",
+      render: (value, row) => (
+        <button
+          onClick={() => openNotesModal(row)}
+          className="text-gray-600 hover:text-blue-600"
+          title="Add or Edit Notes"
+        >
+          <Pencil className="h-5 w-5" />
+        </button>
+      ),
     },
   ];
 
-  const handleViewDetails = (appId) => {
-    toast.info(`Viewing details for Application ID: ${appId}`);
-  };
+  const completedColumns = [
+    { key: "application_id", header: "App ID", sortable: true },
+    { key: "moodle_id", header: "Student ID", sortable: true },
+    { key: "student_name", header: "Student Name", sortable: true },
+    {
+      key: "status",
+      header: "Status",
+      render: (value) => (
+        <span
+          className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(
+            value
+          )}`}
+        >
+          {value}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (_, row) => (
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              const url = row.cloudinary_url;
+              if (!url) return alert("No document available");
 
-  //Filters
-  const [searchId, setSearchId] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
-  const [selectedPriority, setSelectedPriority] = useState("All Priorities");
-
-  const departments = ["All Departments", ...new Set(pendingApplications.map((a) => a.department_name || "Unknown"))];
-  const priorities = ["All Priorities", ...new Set(pendingApplications.map((a) => a.priority || "Unknown"))];
-
-  const filteredPending = useMemo(() => {
-    return pendingApplications.filter((a) => {
-      const matchDept =
-        selectedDepartment === "All Departments" || a.department_name === selectedDepartment;
-      const matchPriority =
-        selectedPriority === "All Priorities" || a.priority === selectedPriority;
-      const matchId =
-        searchId.trim() === "" || a.id.toString().toLowerCase().includes(searchId.toLowerCase());
-      return matchDept && matchPriority && matchId;
-    });
-  }, [pendingApplications, selectedDepartment, selectedPriority, searchId]);
+              const ext = url.split(".").pop().toLowerCase();
+              if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+                // Open images directly
+                window.open(url, "_blank");
+              } else if (ext === "pdf") {
+                // Open PDF directly
+                window.open(url, "_blank");
+              } else {
+                // Fallback: Cloudinary might not show the file inline
+                window.open(`${url}.pdf`, "_blank");
+              }
+            }}
+            className="text-gray-600 hover:text-blue-600"
+          >
+            <Eye className="h-5 w-5" />
+          </button>
+        </div>
+      ),
+    },
+    {
+      key: "app_notes",
+      header: "Incharge Notes",
+      render: (value) => (
+        <p className="text-gray-700 text-sm">{value || "No notes added"}</p>
+      ),
+    },
+  ];
 
   //Department Overview Placeholder
   const departmentOverview = [
@@ -213,7 +329,6 @@ export default function InchargeDashboard() {
       <ToastContainer position="top-center" />
       <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
             <div className="flex-grow">
               <h1 className="text-3xl font-bold text-gray-900">
@@ -225,14 +340,39 @@ export default function InchargeDashboard() {
             </div>
           </header>
 
-          {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {dynamicStats.map((stat, i) => (
+            {[
+              {
+                title: "Pending Reviews",
+                value: pendingApplications.length.toString(),
+                icon: Clock,
+                iconBgColor: "bg-yellow-100",
+              },
+              {
+                title: "Completed This Week",
+                value: completedApplications.length.toString(),
+                icon: CheckCircleIcon,
+                iconBgColor: "bg-green-100",
+              },
+              {
+                title: "Total Applications",
+                value: (
+                  pendingApplications.length + completedApplications.length
+                ).toString(),
+                icon: FileText,
+                iconBgColor: "bg-blue-100",
+              },
+              {
+                title: "Avg. Processing Time",
+                value: "2.1 days",
+                icon: TrendingUp,
+                iconBgColor: "bg-indigo-100",
+              },
+            ].map((stat, i) => (
               <StatCard key={i} {...stat} />
             ))}
           </div>
 
-          {/* Tabs */}
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex space-x-6">
               {["pending", "completed", "overview"].map((tab) => (
@@ -251,92 +391,99 @@ export default function InchargeDashboard() {
             </nav>
           </div>
 
-          {/* Content */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             {loading ? (
-              <p className="text-gray-500 text-center py-8">Loading applications...</p>
+              <p className="text-gray-500 text-center py-8">
+                Loading applications...
+              </p>
             ) : activeTab === "pending" ? (
-              <div className="overflow-x-auto">
-                {filteredPending.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No pending applications.</p>
-                ) : (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">App ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredPending.map((a) => (
-                        <tr key={a.id}>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.id}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.student_id}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.type}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${getPriorityColor(a.priority)}`}>
-                              {a.priority.toUpperCaseCase()}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium flex space-x-2">
-                            <button onClick={() => handleViewDetails(a.id)} className="text-gray-600 hover:text-blue-600">
-                              <Eye className="h-5 w-5" />
-                            </button>
-                            <button onClick={() => handleUpdateStatus(a.id, "approved")} className="text-gray-600 hover:text-green-600">
-                              <CheckCircleIcon className="h-5 w-5" />
-                            </button>
-                            <button onClick={() => handleUpdateStatus(a.id, "rejected")} className="text-gray-600 hover:text-red-600">
-                              <XCircle className="h-5 w-5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+              <Table data={pendingApplications} columns={pendingColumns} />
             ) : activeTab === "completed" ? (
-              <div className="overflow-x-auto">
-                {completedApplications.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No completed applications.</p>
-                ) : (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">App ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {completedApplications.map((a) => (
-                        <tr key={a.id}>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.id}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.student_id}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(a.status)}`}>
-                              {a.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+              <Table data={completedApplications} columns={completedColumns} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {departmentOverview.map((dept, i) => (
-                  <DepartmentCard key={i} {...dept} onViewDetails={() => toast.info(`Viewing ${dept.title}`)} />
+                  <DepartmentCard
+                    key={i}
+                    {...dept}
+                    onViewDetails={() => toast.info(`Viewing ${dept.title}`)}
+                  />
                 ))}
               </div>
             )}
           </div>
         </div>
       </div>
+      {/* {selectedDoc && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-xl p-4 max-w-3xl w-full shadow-lg relative">
+            <button
+              onClick={() => setSelectedDoc(null)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            {selectedDoc.endsWith(".pdf") ? (
+              <iframe
+                src={selectedDoc}
+                width="100%"
+                height="500px"
+                title="Student Document"
+              ></iframe>
+            ) : (
+              <img
+                src={selectedDoc}
+                alt="Document"
+                className="max-h-[500px] w-full object-contain"
+              />
+            )}
+          </div>
+        </div>
+      )} */}
+      {isNotesModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+            <button
+              onClick={closeNotesModal}
+              className="absolute top-2 right-3 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-lg font-semibold mb-3 text-gray-800">
+              Add / Edit Notes
+            </h3>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Type your notes here..."
+              className="w-full h-32 p-3 border rounded-md text-sm focus:ring focus:ring-blue-200 resize-none"
+            />
+
+            <div className="flex justify-end mt-4 space-x-2">
+              <button
+                onClick={closeNotesModal}
+                className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  await handleUpdateNotes(
+                    selectedAppForNotes.application_id,
+                    noteText
+                  );
+                  closeNotesModal();
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   );

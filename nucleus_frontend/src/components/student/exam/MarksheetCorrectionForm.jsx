@@ -176,10 +176,11 @@ export default function MarksheetCorrectionForm() {
               />
             </div>
             <div>
-              <label className="block font-medium mb-2">Moodle ID</label>
+              <label htmlFor="moodle_id" className="block font-medium mb-2">Moodle ID</label>
               <input
                 type="text"
                 name="moodle_id"
+                id="moodle_id"
                 value={formData.moodle_id}
                 disabled
                 className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"

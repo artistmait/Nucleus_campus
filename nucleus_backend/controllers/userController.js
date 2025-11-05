@@ -12,12 +12,11 @@ export const createToken = (id) => {
 console.log("secret ->", process.env.JWT_SECRET);
 export const loginUser = async (req, res) => {
   try {
-    const { moodle_id, password } = req.body;
-    console.log("moodle_id->", moodle_id);
-    // Find user by moodle_id
+    const { user_email, password } = req.body;
+    // Find user by email
     const result = await pool.query(
-      "SELECT * FROM users WHERE moodle_id = $1",
-      [moodle_id]
+      "SELECT * FROM users WHERE user_email = $1",
+      [user_email]
     );
     console.log("result ->", result);
     if (result.rows.length === 0) {
@@ -41,6 +40,7 @@ export const loginUser = async (req, res) => {
       user :{
         id : user.id,
         moodle_id : user.moodle_id,
+        user_email:user.user_email,
         role_id: user.role_id,
         department_id:user.department_id
       }
@@ -53,11 +53,11 @@ export const loginUser = async (req, res) => {
 
 export const signupUser = async (req, res) => {
   try {
-    const { moodle_id, password, role_id, department_id } = req.body;
+    const { moodle_id,username,user_email, password, role_id, department_id } = req.body;
     // console.log(moodle_id)
     const exists = await pool.query(
-      "SELECT * FROM users WHERE moodle_id = $1",
-      [moodle_id]
+      "SELECT * FROM users WHERE user_email = $1",
+      [user_email]
     );
     // console.log(exists)
     if (exists.rows.length > 0) {
@@ -77,8 +77,8 @@ export const signupUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     const now = new Date();
     const newUser = await pool.query(
-      "INSERT INTO users (moodle_id,password,role_id,department_id,created_at) VALUES ($1,$2,$3,$4,$5) RETURNING * ",
-      [moodle_id, hashedPassword, role_id, department_id, now]
+      "INSERT INTO users (moodle_id,user_email,username,password,role_id,department_id,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING * ",
+      [moodle_id,user_email, username, hashedPassword, role_id, department_id, now]
     );
     // res.json(newUser.rows[0])
     const token = createToken(newUser.rows[0].id);

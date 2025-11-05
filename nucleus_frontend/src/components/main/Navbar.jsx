@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { Atom, Menu, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -52,12 +53,12 @@ export default function Navbar() {
             >
               Home
             </button>
-            <a href="#" className="hover:text-indigo-300 transition-colors font-semibold">
+            {/* <a href="#" className="hover:text-indigo-300 transition-colors font-semibold">
               About
-            </a>
-            <a href="#" className="hover:text-indigo-300 transition-colors font-semibold">
+            </a> */}
+            {/* <a href="#" className="hover:text-indigo-300 transition-colors font-semibold">
               Profile
-            </a>
+            </a> */}
           </div>
 
           {/* Logout */}
@@ -88,12 +89,12 @@ export default function Navbar() {
           <button onClick={handleHomeClick} className="block hover:text-indigo-300">
             Home
           </button>
-          <a href="#" className="block hover:text-indigo-300">
+          {/* <a href="#" className="block hover:text-indigo-300">
             About
           </a>
           <a href="#" className="block hover:text-indigo-300">
             Profile
-          </a>
+          </a> */}
           <button onClick={handleLogout} className="block hover:text-indigo-300">
             Sign Out
           </button>

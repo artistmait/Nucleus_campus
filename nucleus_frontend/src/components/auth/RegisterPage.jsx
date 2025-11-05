@@ -6,7 +6,9 @@ import { Link, useNavigate } from "react-router-dom";
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    username:"",
     moodle_id: "",
+    user_email:"",
     role_id: "",
     department_id: "",
     password: "",
@@ -33,7 +35,9 @@ const RegisterPage = () => {
     try {
       setLoading(true);
       const payload = {
+        username:formData.username,
         moodle_id: formData.moodle_id,
+        user_email:formData.user_email,
         role_id: Number(formData.role_id),
         department_id: Number(formData.department_id),
         password: formData.password,
@@ -48,6 +52,7 @@ const RegisterPage = () => {
         localStorage.setItem(
           "signupCredentials",
           JSON.stringify({
+            user_email:formData.user_email,
             moodle_id: formData.moodle_id,
             password: formData.password,
           })
@@ -82,6 +87,20 @@ const RegisterPage = () => {
 
         {/* Form */}
         <form onSubmit={submitHandler} className="space-y-7">
+          {/* NAME */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Name
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Enter your Name"
+              className="w-full px-5 py-3 border border-gray-300 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
           {/* Moodle ID */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -93,6 +112,21 @@ const RegisterPage = () => {
               value={formData.moodle_id}
               onChange={handleChange}
               placeholder="Enter your Moodle ID"
+              className="w-full px-5 py-3 border border-gray-300 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
+
+           {/*EMAIL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              name="user_email"
+              value={formData.user_email}
+              onChange={handleChange}
+              placeholder="Enter your Email ID"
               className="w-full px-5 py-3 border border-gray-300 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
             />
           </div>
