@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import applicationRouter from './routes/applicationRoute.js';
 import inchargeRouter from './routes/inchargeRoute.js';
 import higherauthRouter from './routes/higherauthRoutes.js';
+import feedbackRouter from './routes/feedbackRoute.js';
 
 
 dotenv.config();
@@ -19,6 +20,9 @@ app.use('/api/auth',userRouter);
 app.use('/api/student',applicationRouter);
 app.use('/api/incharge',inchargeRouter);
 app.use('/api/higher-authority',higherauthRouter);
+
+//ml routes
+app.use('/api/predict',feedbackRouter)
 
 
 app.listen(5000,()=>{
