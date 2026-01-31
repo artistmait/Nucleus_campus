@@ -7,6 +7,7 @@ import Footer from "../../main/Footer";
 import Table from "../../ui/ApprovalsTable";
 import StatCard from "../../ui/StatCard";
 import { FileText, Clock, AlertCircle, Pencil } from "lucide-react";
+import {DialogBox} from "../../ui/DialogBox";
 
 export default function MyApplications() {
   const [applications, setApplications] = useState([]);
@@ -137,6 +138,23 @@ export default function MyApplications() {
     }
   };
 
+  const sendFeedback = async (feedbackText) => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    await axios.post("http://localhost:5000/api/predict/feedback", {
+      user_id: user.id,
+      feedbackText: feedbackText,
+    });
+
+    toast.success("Thank you for your feedback!");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to submit feedback.");
+  }
+};
+
+
   const columns = [
     { key: "application_id", header: "Application ID", sortable: true },
     { key: "type", header: "Request Type", sortable: true },
@@ -250,11 +268,19 @@ export default function MyApplications() {
               searchPlaceholder="Search applications..."
               defaultItemsPerPage={10}
             />
+            <div className="w-auto justify-center">
+              <div className="shadow-2xl p-8 mt-2 text-center flex flex-col items-center justify-center rounded-2xl">
+              <p className="font-semibold text-2xl text-gray-400 p-4">Please let us know how you find our service</p>
+              <DialogBox onSubmit={sendFeedback}/>
+              </div>
+              
+            </div>
+            
           </>
         )}
       </main>
       {isUploadModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 bg-opacity-40 backdrop-blur-sm z-50">
           <div className="bg-white rounded-xl p-6 shadow-lg w-96">
             <h2 className="text-xl font-semibold mb-4 text-indigo-900">
               Upload New Document

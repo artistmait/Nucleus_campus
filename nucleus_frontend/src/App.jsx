@@ -9,6 +9,9 @@ import HaDashboard from "./components/higher_authority/HaDashboard";
 import InchargeDashboard from "./components/incharge/InchargeDashboard";
 import ProtectedRoute from "./components/main/ProtectedRoutes";
 import MyApplications from "./components/student/exam/MyApplications";
+import KTFormSubmission from "./components/student/exam/KTFormSubmission";
+import { IcLandingPage } from "./components/incharge/IcLandingPage";
+import { HaLandingPage } from "./components/higher_authority/HaLandingPage";
 
 function App() {
   const router = createBrowserRouter([
@@ -33,6 +36,10 @@ function App() {
           element: <MarksheetCorrectionForm />,
         },
         {
+          path: "/student/ktsubmission",
+          element: <KTFormSubmission />,
+        },
+        {
           path: "/student/myapplications",
           element: <MyApplications />,
         },
@@ -41,6 +48,10 @@ function App() {
     {
       element: <ProtectedRoute allowedRoles={[2]} />,
       children: [
+         {
+          path: "/incharge/landingpage",
+          element: <IcLandingPage />,
+        },
         {
           path: "/incharge/dashboard",
           element: <InchargeDashboard />,
@@ -53,6 +64,10 @@ function App() {
         {
           path: "/higher-authority/dashboard",
           element: <HaDashboard />,
+        },
+        {
+          path: "/higher-authority/landingpage",
+          element: <HaLandingPage />,
         },
       ],
     },

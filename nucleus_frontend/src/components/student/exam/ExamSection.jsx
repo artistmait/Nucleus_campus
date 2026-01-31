@@ -24,9 +24,9 @@ const services = [
   },
   {
     icon: FileCheck2,
-    title: "Revaluation Request",
-    description: "Apply for examination paper revaluation",
-    link:'/revaluation'
+    title: "KT Exam Form Submission",
+    description: "Apply for KT examinations",
+    link:'/student/ktsubmission'
   },
 ];
 
