@@ -18,24 +18,24 @@ export const getInchargeApplications = async (req, res) => {
          u.username AS student_name,
          u.moodle_id,
          d.document_type,
-         d.cloudinary_url
+         d.cloudinary_url,
+         dept.dept_name AS branch
        FROM applications a
        LEFT JOIN users u ON a.student_id = u.id
        LEFT JOIN documents d ON a.document_id = d.id
+       LEFT JOIN department dept ON u.department_id = dept.id
        WHERE a.incharge_id = $1
        ORDER BY a.created_at DESC`,
-      [incharge_id]
+      [incharge_id],
     );
 
     res.json({ success: true, applications: result.rows });
   } catch (error) {
     console.error("Error fetching incharge applications:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch incharge applications",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch incharge applications",
+    });
   }
 };
 
@@ -94,12 +94,14 @@ export const updateApplicationStatus = async (req, res) => {
      u.username AS student_name,
      u.moodle_id,
      d.document_type,
-     d.cloudinary_url
+     d.cloudinary_url,
+     dept.dept_name AS branch
    FROM applications a
    LEFT JOIN users u ON a.student_id = u.id
    LEFT JOIN documents d ON a.document_id = d.id
+   LEFT JOIN department dept ON u.department_id = dept.id
    WHERE a.application_id = $1`,
-      [application_id]
+      [application_id],
     );
 
     res.json({
@@ -115,7 +117,6 @@ export const updateApplicationStatus = async (req, res) => {
   }
 };
 
-
 export const updateApplicationNotes = async (req, res) => {
   const { application_id } = req.params;
   const { app_notes } = req.body;
@@ -126,7 +127,7 @@ export const updateApplicationNotes = async (req, res) => {
        SET app_notes = $1 
        WHERE application_id = $2 
        RETURNING *`,
-      [app_notes, application_id]
+      [app_notes, application_id],
     );
 
     if (result.rowCount === 0)
@@ -134,11 +135,55 @@ export const updateApplicationNotes = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Application not found" });
 
-    res.json({ success: true, message: "Notes updated", app_notes: result.rows[0].app_notes });
+    res.json({
+      success: true,
+      message: "Notes updated",
+      app_notes: result.rows[0].app_notes,
+    });
   } catch (error) {
     console.error("Error updating notes:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update notes" });
+    res.status(500).json({ success: false, message: "Failed to update notes" });
+  }
+};
+
+//controller for visuals
+
+export const getInchargeDashboard = async (req, res) => {
+  const { incharge_id } = req.params;
+
+  try {
+    const studentsByBranch = await pool.query(`
+  SELECT
+    d.dept_name AS branch,
+    COUNT(u.id) AS total_students
+  FROM users u
+  JOIN department d ON u.department_id = d.id
+  JOIN roles r ON u.role_id = r.id
+  WHERE r.role_name = 'student'
+  GROUP BY d.dept_name
+  ORDER BY d.dept_name
+`);
+
+    const applicationsByBranch = await pool.query(
+      `
+  SELECT
+    d.dept_name AS branch,
+    COUNT(a.id) AS total_applications
+  FROM applications a
+  JOIN users u ON a.student_id = u.id
+  JOIN department d ON u.department_id = d.id
+  WHERE a.incharge_id = $1
+  GROUP BY d.dept_name
+  `,
+      [incharge_id],
+    );
+
+    res.json({
+      studentsByBranch: studentsByBranch.rows,
+      applicationsByBranch: applicationsByBranch.rows,
+    });
+  } catch (error) {
+    console.error("Dashboard error:", error);
+    res.status(500).json({ message: "Dashboard fetch failed" });
   }
 };

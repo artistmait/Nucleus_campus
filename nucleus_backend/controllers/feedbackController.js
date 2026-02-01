@@ -65,3 +65,28 @@ export const feedback_predict = async (req, res) => {
     });
   }
 };
+
+export const getFeedbackAnalytics = async (req, res) => {
+  try {
+    const sentimentDistribution = await pool.query(`
+      SELECT sentiment_text, COUNT(*) AS count
+      FROM feedback
+      GROUP BY sentiment_text
+    `);
+
+    const feedbackTrend = await pool.query(`
+      SELECT DATE(created_at) AS date, COUNT(*) AS total
+      FROM feedback
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `);
+
+    res.json({
+      sentimentDistribution: sentimentDistribution.rows,
+      feedbackTrend: feedbackTrend.rows,
+    });
+  } catch (err) {
+    console.error("Feedback analytics error:", err);
+    res.status(500).json({ message: "Failed to fetch feedback analytics" });
+  }
+};

@@ -1,6 +1,7 @@
 import pool from "../config/dbConfig.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 import fs from "fs";
+import { transporter } from "../config/email.js";
 
 export const submitApplication = async (req, res) => {
   const client = await pool.connect();
@@ -29,14 +30,14 @@ export const submitApplication = async (req, res) => {
       `INSERT INTO documents (student_id, document_type, cloudinary_url)
        VALUES ($1, $2, $3)
        RETURNING id`,
-      [student_id, type, uploadResult.secure_url]
+      [student_id, type, uploadResult.secure_url],
     );
 
     const document_id = documentInsert.rows[0].id;
 
     //Assign random incharge
     const incharge = await client.query(
-      "SELECT id FROM users WHERE role_id = 2 ORDER BY RANDOM() LIMIT 1"
+      "SELECT id FROM users WHERE role_id = 2 ORDER BY RANDOM() LIMIT 1",
     );
 
     if (incharge.rows.length === 0) {
@@ -51,7 +52,7 @@ export const submitApplication = async (req, res) => {
     deadline.setDate(deadline.getDate() + 7); // 7-day deadline
 
     const seqResult = await client.query(
-      "SELECT nextval('application_seq') AS seq"
+      "SELECT nextval('application_seq') AS seq",
     );
     const seq = seqResult.rows[0].seq;
     const newapp_id = `APN-${String(seq).padStart(4, "0")}`;
@@ -68,10 +69,45 @@ export const submitApplication = async (req, res) => {
         deadline,
         department_id,
         newapp_id,
-      ]
+      ],
     );
 
     await client.query("COMMIT");
+
+    //get email from backend
+    const studentResult = await pool.query(
+      `SELECT user_email, moodle_id 
+   FROM users 
+   WHERE id = $1`,
+      [student_id],
+    );
+
+    if (studentResult.rows.length === 0) {
+      throw new Error("Student not found");
+    }
+
+    //send email notif on submit
+    const { user_email, moodle_id } = studentResult.rows[0];
+    const application = newApp.rows[0];
+
+    await transporter.sendMail({
+      from: `"Application Portal" <${process.env.EMAIL_USER}>`,
+      to: user_email,
+      subject: "Application Submitted Successfully",
+      html: `
+    <h2>Application Submitted Successfully</h2>
+    <p><b>Moodle ID:</b> ${moodle_id}</p>
+    <p><b>Application ID:</b> ${application.application_id}</p>
+    <p><b>Application Type:</b> ${application.type}</p>
+    <p><b>Status:</b> ${application.status}</p>
+    <p><b>Deadline:</b> ${
+      application.deadline
+        ? new Date(application.deadline).toLocaleDateString()
+        : "Not specified"
+    }</p>
+    <p><b>Submitted On:</b> ${new Date(application.created_at).toLocaleString()}</p>
+  `,
+    });
 
     res.json({
       success: true,
@@ -109,7 +145,7 @@ export const getMyApplications = async (req, res) => {
        LEFT JOIN documents d ON a.document_id = d.id
        WHERE a.student_id = $1
        ORDER BY a.created_at DESC`,
-      [student_id]
+      [student_id],
     );
 
     res.status(200).json({
@@ -157,7 +193,7 @@ export const updateMyApplicationDocument = async (req, res) => {
    JOIN documents d ON a.document_id = d.id
    WHERE a.application_id = $2
    RETURNING *`,
-      [uploadResult.secure_url, application_id]
+      [uploadResult.secure_url, application_id],
     );
 
     const newDocumentId = documentInsert.rows[0].id;
@@ -165,7 +201,7 @@ export const updateMyApplicationDocument = async (req, res) => {
     // Update the application with the new document id
     await client.query(
       `UPDATE applications SET document_id = $1 WHERE application_id = $2`,
-      [newDocumentId, application_id]
+      [newDocumentId, application_id],
     );
 
     await client.query("COMMIT");

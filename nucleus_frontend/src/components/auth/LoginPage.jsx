@@ -64,7 +64,7 @@ const LoginPage = () => {
         // Redirect after login
         setTimeout(() => {
           if (role === 1) navigate("/student/dashboard");
-          else if (role === 2) navigate("/incharge/dashboard");
+          else if (role === 2) navigate("/incharge/landingpage");
           else if (role === 3) navigate("/higher-authority/dashboard");
           else if (role === 4) navigate("/student/dashboard");
           else navigate("/");

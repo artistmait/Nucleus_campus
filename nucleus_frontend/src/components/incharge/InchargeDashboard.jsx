@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -62,6 +63,9 @@ const DepartmentCard = ({
 );
 
 export default function InchargeDashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const branchFilter = searchParams.get("branch");
+
   const [activeTab, setActiveTab] = useState("pending");
   const [pendingApplications, setPendingApplications] = useState([]);
   const [completedApplications, setCompletedApplications] = useState([]);
@@ -84,7 +88,12 @@ export default function InchargeDashboard() {
           `http://localhost:5000/api/incharge/getApplication/${user.id}`
         );
         if (res.data.success) {
-          const apps = res.data.applications;
+          let apps = res.data.applications;
+
+          if (branchFilter) {
+            apps = apps.filter((a) => a.branch === branchFilter);
+          }
+
           setPendingApplications(apps.filter((a) => a.status === "pending"));
           setCompletedApplications(apps.filter((a) => a.status !== "pending"));
         } else toast.error("Failed to fetch applications");
@@ -96,7 +105,7 @@ export default function InchargeDashboard() {
       }
     };
     fetchApplications();
-  }, []);
+  }, [branchFilter]);
 
   //Update Status
   const handleUpdateStatus = async (application_id, newStatus) => {
@@ -138,7 +147,7 @@ export default function InchargeDashboard() {
     try {
       const res = await axios.put(
         `http://localhost:5000/api/incharge/updateNotes/${application_id}`,
-        { app_notes:app_notes }
+        { app_notes: app_notes }
       );
       if (res.data.success) {
         toast.success("Notes saved successfully!");
@@ -147,7 +156,7 @@ export default function InchargeDashboard() {
           prev.map((a) =>
             a.application_id === application_id ? { ...a, app_notes } : a
           )
-        );  
+        );
       }
     } catch (err) {
       console.error("Error saving notes:", err);
@@ -337,6 +346,19 @@ export default function InchargeDashboard() {
               <p className="text-md text-gray-600 mt-1">
                 Review and process departmental applications
               </p>
+              {branchFilter && (
+                <div className="mt-4 flex items-center">
+                  <span className="bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded">
+                    Filtered by Branch: {branchFilter}
+                  </span>
+                  <button
+                    onClick={() => setSearchParams({})}
+                    className="text-sm text-red-600 hover:underline"
+                  >
+                    Clear Filter
+                  </button>
+                </div>
+              )}
             </div>
           </header>
 
@@ -378,11 +400,10 @@ export default function InchargeDashboard() {
               {["pending", "completed", "overview"].map((tab) => (
                 <button
                   key={tab}
-                  className={`py-3 px-1 border-b-2 text-sm font-semibold ${
-                    activeTab === tab
+                  className={`py-3 px-1 border-b-2 text-sm font-semibold ${activeTab === tab
                       ? "border-blue-600 text-blue-600"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab(tab)}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)} Applications
