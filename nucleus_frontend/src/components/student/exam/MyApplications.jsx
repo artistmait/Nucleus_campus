@@ -21,8 +21,8 @@ export default function MyApplications() {
     switch (value) {
       case "high":
         return "bg-red-100 text-red-700";
-      case "medium":
-        return "bg-yellow-100 text-yellow-700";
+      case "critical":
+        return "bg-purple-800 text-white";
       case "low":
         return "bg-green-100 text-green-700";
       default:
@@ -41,6 +41,20 @@ export default function MyApplications() {
         return "bg-yellow-100 text-yellow-700";
       default:
         return "bg-gray-100 text-gray-700";
+    }
+  };
+
+    const getStageColor = (stage) => {
+    const value = (stage || "").toLowerCase();
+    switch (value) {
+      case "submitted":
+        return "bg-yellow-700 text-white";
+      case "reviewed":
+        return "bg-purple-700 text-white";
+      case "completed":
+        return "bg-green-700 text-white";
+      default:
+        return "bg-red-700 text-white";
     }
   };
 
@@ -75,7 +89,7 @@ export default function MyApplications() {
   }, []);
 
   const totalApps = applications.length;
-  const pending = applications.filter((a) => a.status === "pending").length;
+  const pending = applications.filter((a) => a.status === "pending" || a.stage=== "reviewed" || a.stage==='submitted').length;
   const critical = applications.filter(
     (a) => a.priority === "critical" || a.priority === "high"
   ).length;
@@ -180,6 +194,20 @@ export default function MyApplications() {
       ),
     },
     {
+      key: "stage",
+      header: "Application Stage",
+      sortable: true,
+      render: (val) => (
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${getStageColor(
+            val
+          )}`}
+        >
+          {val}
+        </span>
+      ),
+    },
+    {
       key: "priority",
       header: "Priority",
       sortable: true,
@@ -268,14 +296,14 @@ export default function MyApplications() {
               searchPlaceholder="Search applications..."
               defaultItemsPerPage={10}
             />
+            {applications.stage === 'completed' && (
             <div className="w-auto justify-center">
               <div className="shadow-2xl p-8 mt-2 text-center flex flex-col items-center justify-center rounded-2xl">
               <p className="font-semibold text-2xl text-gray-400 p-4">Please let us know how you find our service</p>
               <DialogBox onSubmit={sendFeedback}/>
               </div>
-              
             </div>
-            
+            )}       
           </>
         )}
       </main>

@@ -66,14 +66,14 @@ export const IcLandingPage = () => {
     }));
   }, [COLORS, dashboardData]);
 
-  const barData = useMemo(() => {
-    if (!dashboardData) return [];
+  // const barData = useMemo(() => {
+  //   if (!dashboardData) return [];
 
-    return dashboardData.applicationsByBranch.map((item) => ({
-      name: item.branch,
-      applications: Number(item.total_applications),
-    }));
-  }, [dashboardData]);
+  //   return dashboardData.applicationsByBranch.map((item) => ({
+  //     name: item.branch,
+  //     applications: Number(item.total_applications),
+  //   }));
+  // }, [dashboardData]);
 
   const sentimentPieData = useMemo(() => {
     if (!feedbackData) return [];
@@ -220,7 +220,7 @@ export const IcLandingPage = () => {
             </div>
             <div className="grid grid-cols-1 xl:grid-rows-2 gap-6">
               {/* BAR CHART */}
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <h3 className="text-lg font-semibold">
                     Applications by Branch
@@ -246,7 +246,7 @@ export const IcLandingPage = () => {
                     </ResponsiveContainer>
                   )}
                 </CardContent>
-              </Card>
+              </Card> */}
               {/* line chart */}
               <Card>
                 <CardHeader>
