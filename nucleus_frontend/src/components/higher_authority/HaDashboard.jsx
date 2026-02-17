@@ -207,7 +207,7 @@ export default function HodDashboard() {
               if (!url) return toast.error("No document available");
               window.open(url, "_blank");
             }}
-            className="text-gray-600 hover:text-blue-600"
+            className="text-blue-600 hover:text-blue-100"
           >
             <Eye className="h-5 w-5" />
           </button>
@@ -217,7 +217,7 @@ export default function HodDashboard() {
               setNewPriority(row.priority);
               setShowPriorityModal(true);
             }}
-            className="text-gray-600 hover:text-indigo-600"
+            className="text-indigo-800 hover:text-indigo-100"
           >
             <Edit className="h-5 w-5" />
           </button>
@@ -275,7 +275,7 @@ export default function HodDashboard() {
         <div className="max-w-7xl mx-auto">
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
             <div className="flex items-start gap-4">
-              {/* 🔙 Back Button */}
+              {/* Back Button */}
               <button
                 onClick={() => navigate(-1)}
                 className="mt-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
@@ -373,7 +373,7 @@ export default function HodDashboard() {
           </div>
         </div>
         {showPriorityModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="fixed inset-0 flex items-center justify-center backdrop-blur-lg bg-opacity-40 z-50">
             <div className="bg-white p-6 rounded-xl shadow-xl w-96">
               <h2 className="text-lg font-semibold mb-4">Change Priority</h2>
 

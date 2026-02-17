@@ -83,12 +83,10 @@ export const getHADashboard = async (req, res) => {
   }
 };
 
-
 export const gethaDashboard = async (req, res) => {
   const { department_id } = req.params;
 
   try {
-
     const studentsCount = await pool.query(
       `
       SELECT COUNT(u.id) AS total_students
@@ -97,7 +95,7 @@ export const gethaDashboard = async (req, res) => {
       WHERE u.department_id = $1
       AND r.role_name = 'student'
       `,
-      [department_id]
+      [department_id],
     );
 
     const applicationsCount = await pool.query(
@@ -107,7 +105,7 @@ export const gethaDashboard = async (req, res) => {
       JOIN users u ON a.student_id = u.id
       WHERE u.department_id = $1
       `,
-      [department_id]
+      [department_id],
     );
 
     const sentimentData = await pool.query(
@@ -121,21 +119,20 @@ export const gethaDashboard = async (req, res) => {
       WHERE u.department_id = $1
       GROUP BY f.sentiment
       `,
-      [department_id]
+      [department_id],
     );
 
     res.json({
       success: true,
       totalStudents: studentsCount.rows[0].total_students,
       totalApplications: applicationsCount.rows[0].total_applications,
-      sentimentDistribution: sentimentData.rows
+      sentimentDistribution: sentimentData.rows,
     });
-
   } catch (error) {
     console.error("HA Dashboard error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch HA dashboard data"
+      message: "Failed to fetch HA dashboard data",
     });
   }
 };
@@ -154,12 +151,20 @@ export const updateApplicationPriority = async (req, res) => {
       });
     }
 
-    await pool.query(
+    const result = await pool.query(
       `UPDATE applications
-       SET priority = $1
-       WHERE application_id = $2`,
-      [priority.toLowerCase(), application_id]
+   SET priority = $1
+   WHERE application_id = $2
+   RETURNING *`,
+      [priority.toLowerCase(), application_id],
     );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
 
     res.json({
       success: true,

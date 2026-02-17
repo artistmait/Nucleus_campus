@@ -7,6 +7,6 @@ const higherauthRouter = express.Router();
 
 higherauthRouter.get('/getApplications/:department_id',getDepartmentApplications)
 higherauthRouter.get('/gethaDashboard/:department_id',gethaDashboard)
-higherauthRouter.put('/updatePriority/:department_id',updateApplicationPriority)
+higherauthRouter.put('/updatePriority/:application_id',updateApplicationPriority)
 
 export default higherauthRouter;
