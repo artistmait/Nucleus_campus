@@ -24,7 +24,7 @@ function App() {
       element: <LoginPage />,
     },
     {
-      element: <ProtectedRoute allowedRoles={[1]} />,
+      element: <ProtectedRoute allowedRoles={[1,4]} />,
       children: [
         { path: "/student/dashboard", element: <StudentDashboard /> },
         {
