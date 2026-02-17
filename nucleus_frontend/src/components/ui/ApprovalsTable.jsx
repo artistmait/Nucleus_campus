@@ -132,13 +132,19 @@ export default function Table({
             </tr>
           ) : (
             paginatedData.map((row, i) => {
-              const isAlumni = row.priority?.toLowerCase() === "high";
+              // const status = row.status?.toLowerCase();
+              const priority = row.priority?.toLowerCase();
+              const role = row.role?.toLowerCase(); // if role exists in row
+
+              const shouldHighlight =(priority === "high" ||
+                  priority === "critical" ||
+                  role === "alumni");
 
               return (
                 <tr
                   key={i}
                   className={`transition-all duration-150 ${
-                    isAlumni
+                    shouldHighlight
                       ? "bg-red-200 hover:bg-red-300"
                       : i % 2 === 0
                         ? "bg-white"

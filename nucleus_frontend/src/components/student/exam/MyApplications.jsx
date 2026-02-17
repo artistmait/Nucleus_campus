@@ -7,7 +7,8 @@ import Footer from "../../main/Footer";
 import Table from "../../ui/ApprovalsTable";
 import StatCard from "../../ui/StatCard";
 import { FileText, Clock, AlertCircle, Pencil } from "lucide-react";
-import {DialogBox} from "../../ui/DialogBox";
+import { DialogBox } from "../../ui/DialogBox";
+// import { useNavigate } from "react-router-dom";
 
 export default function MyApplications() {
   const [applications, setApplications] = useState([]);
@@ -44,7 +45,7 @@ export default function MyApplications() {
     }
   };
 
-    const getStageColor = (stage) => {
+  const getStageColor = (stage) => {
     const value = (stage || "").toLowerCase();
     switch (value) {
       case "submitted":
@@ -68,7 +69,7 @@ export default function MyApplications() {
     const fetchApplications = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/student/getApplications/${user.id}`
+          `http://localhost:5000/api/student/getApplications/${user.id}`,
         );
 
         if (res.data.success) {
@@ -89,9 +90,14 @@ export default function MyApplications() {
   }, []);
 
   const totalApps = applications.length;
-  const pending = applications.filter((a) => a.status === "pending" || a.stage=== "reviewed" || a.stage==='submitted').length;
+  const pending = applications.filter(
+    (a) =>
+      a.status === "pending" ||
+      a.stage === "reviewed" ||
+      a.stage === "submitted",
+  ).length;
   const critical = applications.filter(
-    (a) => a.priority === "critical" || a.priority === "high"
+    (a) => a.priority === "critical" || a.priority === "high",
   ).length;
 
   const formatDate = (isoDate) => {
@@ -130,7 +136,7 @@ export default function MyApplications() {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
 
       if (res.data.success) {
@@ -139,8 +145,8 @@ export default function MyApplications() {
           prev.map((app) =>
             app.application_id === selectedApp.application_id
               ? { ...app, cloudinary_url: res.data.newUrl }
-              : app
-          )
+              : app,
+          ),
         );
         closeUploadModal();
       } else {
@@ -153,21 +159,20 @@ export default function MyApplications() {
   };
 
   const sendFeedback = async (feedbackText) => {
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
 
-    await axios.post("http://localhost:5000/api/predict/feedback", {
-      user_id: user.id,
-      feedbackText: feedbackText,
-    });
+      await axios.post("http://localhost:5000/api/predict/feedback", {
+        user_id: user.id,
+        feedbackText: feedbackText,
+      });
 
-    toast.success("Thank you for your feedback!");
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to submit feedback.");
-  }
-};
-
+      toast.success("Thank you for your feedback!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit feedback.");
+    }
+  };
 
   const columns = [
     { key: "application_id", header: "Application ID", sortable: true },
@@ -186,7 +191,7 @@ export default function MyApplications() {
       render: (val) => (
         <span
           className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-            val
+            val,
           )}`}
         >
           {val}
@@ -200,7 +205,7 @@ export default function MyApplications() {
       render: (val) => (
         <span
           className={`px-3 py-1 rounded-full text-xs font-semibold ${getStageColor(
-            val
+            val,
           )}`}
         >
           {val}
@@ -214,7 +219,7 @@ export default function MyApplications() {
       render: (val) => (
         <span
           className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
-            val
+            val,
           )}`}
         >
           {val}
@@ -231,14 +236,25 @@ export default function MyApplications() {
     {
       key: "actions",
       header: "Actions",
-      render: (value, application) => (
-        <button
-          onClick={() => openUploadModal(application)}
-          className="text-blue-600 hover:text-blue-800 underline"
-        >
-          <Pencil className="h-5 w-5" />
-        </button>
-      ),
+      render: (value, application) => {
+        const isCompleted = application.stage === "completed";
+
+        return (
+          <button
+            onClick={() => {
+              if (!isCompleted) openUploadModal(application);
+            }}
+            disabled={isCompleted}
+            className={`${
+              isCompleted
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-blue-600 hover:text-blue-800"
+            }`}
+          >
+            <Pencil className="h-5 w-5" />
+          </button>
+        );
+      },
     },
   ];
 
@@ -248,6 +264,12 @@ export default function MyApplications() {
       <Navbar />
 
       <main className="flex-grow w-full max-w-6xl mx-auto px-6 md:px-10 lg:px-14 py-12">
+        {/* <button
+                onClick={() => navigate(-1)}
+                className="mt-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                ← Back
+              </button> */}
         <h1 className="text-4xl font-bold text-indigo-900 mb-8">
           My Applications
         </h1>
@@ -296,14 +318,16 @@ export default function MyApplications() {
               searchPlaceholder="Search applications..."
               defaultItemsPerPage={10}
             />
-            {applications.stage === 'completed' && (
-            <div className="w-auto justify-center">
-              <div className="shadow-2xl p-8 mt-2 text-center flex flex-col items-center justify-center rounded-2xl">
-              <p className="font-semibold text-2xl text-gray-400 p-4">Please let us know how you find our service</p>
-              <DialogBox onSubmit={sendFeedback}/>
+            {applications.some((app) => app.stage === "completed") && (
+              <div className="w-auto justify-center">
+                <div className="shadow-2xl p-8 mt-2 text-center flex flex-col items-center justify-center rounded-2xl">
+                  <p className="font-semibold text-2xl text-gray-400 p-4">
+                    Please let us know how you find our service
+                  </p>
+                  <DialogBox onSubmit={sendFeedback} />
+                </div>
               </div>
-            </div>
-            )}       
+            )}
           </>
         )}
       </main>

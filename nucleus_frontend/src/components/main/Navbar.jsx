@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { Atom, Menu, X } from "lucide-react";
@@ -26,7 +27,7 @@ export default function Navbar() {
     // console.log("User:", user);
     const user1 = JSON.parse(user);
     // console.log("Role ID:", user1.role_id);
-    if (user1.role_id === 1 || roleId === 4) navigate("/student/myapplications");
+    if (user1.role_id === 1 || user1.role_id === 4) navigate("/student/myapplications");
     else if (user1.role_id === 2) navigate("/incharge/dashboard");
     else if(user1.role_id ===3) navigate("/higher-authority/dashboard");
     else navigate("/");
