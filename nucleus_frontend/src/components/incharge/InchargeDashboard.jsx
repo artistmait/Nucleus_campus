@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Eye,
   XCircle,
+  Edit,
 } from "lucide-react";
 import Navbar from "../main/Navbar";
 import Footer from "../main/Footer";
@@ -40,10 +41,12 @@ export default function InchargeDashboard() {
   const [completedApps, setCompletedApps] = useState([]);
   const [closedApps, setClosedApps] = useState([]);
   const [allApps, setAllApps] = useState([]);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [notes, setNotes] = useState("");
 
   const [loading, setLoading] = useState(true);
 
-  /* ================= FETCH ================= */
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
@@ -51,7 +54,7 @@ export default function InchargeDashboard() {
     const fetchApplications = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/incharge/getApplication/${user.id}`
+          `http://localhost:5000/api/incharge/getApplication/${user.id}`,
         );
 
         if (res.data.success) {
@@ -78,7 +81,22 @@ export default function InchargeDashboard() {
     fetchApplications();
   }, [branchFilter]);
 
-  /* ================= STATS CALCULATION ================= */
+  const handleNotesUpdate = async () => {
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/incharge/updateNotes/${selectedApp.application_id}`,
+        { app_notes: notes },
+      );
+
+      if (res.data.success) {
+        toast.success("Notes updated successfully");
+        setShowNotesModal(false);
+        window.location.reload();
+      }
+    } catch (error) {
+      toast.error("Failed to update notes");
+    }
+  };
 
   const pendingCount = useMemo(() => {
     return submittedApps.length + reviewedApps.length;
@@ -97,13 +115,11 @@ export default function InchargeDashboard() {
     return (totalDays / completedApps.length).toFixed(1);
   }, [completedApps]);
 
-  /* ================= HANDLE UPDATE ================= */
-
   const handleStageUpdate = async (application_id, payload) => {
     try {
       const res = await axios.put(
         `http://localhost:5000/api/incharge/updateApplication/${application_id}`,
-        payload
+        payload,
       );
 
       if (res.data.success) {
@@ -111,7 +127,7 @@ export default function InchargeDashboard() {
 
         if (payload.markCompleted === true) {
           await axios.post(
-            `http://localhost:5000/api/incharge/notify/${application_id}`
+            `http://localhost:5000/api/incharge/notify/${application_id}`,
           );
           toast.success("Student notified via email!");
         }
@@ -164,6 +180,20 @@ export default function InchargeDashboard() {
         </div>
       ),
     },
+    { key: "Add Notes", 
+      header: "Add Notes",
+    render: (_, row) => (
+        <div className="flex space-x-3">
+          <button
+            onClick={() => {
+              setSelectedApp(row);
+              setNotes(row.app_notes || "");
+              setShowNotesModal(true);
+            }}
+          >
+            <Edit className="h-5 w-5 text-indigo-600" />
+          </button>
+          </div>)},
   ];
 
   const reviewedColumns = [
@@ -220,9 +250,7 @@ export default function InchargeDashboard() {
 
       <div className="bg-gray-50 min-h-screen p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">
-            Incharge Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold mb-6">Incharge Dashboard</h1>
 
           {/* ===== STATUS CARDS ===== */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -285,6 +313,37 @@ export default function InchargeDashboard() {
           </div>
         </div>
       </div>
+      {showNotesModal && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-lg bg-opacity-40 z-50">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-96">
+            <h2 className="text-lg font-semibold mb-4">Update Notes</h2>
+
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-300 rounded-lg p-2 mb-4"
+              placeholder="Enter notes..."
+            />
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowNotesModal(false)}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleNotesUpdate}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>
