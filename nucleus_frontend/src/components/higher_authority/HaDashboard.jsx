@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Clock,
@@ -9,6 +10,7 @@ import {
   Eye,
   XCircle,
   User2Icon,
+  Edit,
 } from "lucide-react";
 import Navbar from "../main/Navbar";
 import Footer from "../main/Footer";
@@ -74,6 +76,11 @@ export default function HodDashboard() {
   const [activeTab, setActiveTab] = useState("pending");
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPriorityModal, setShowPriorityModal] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [newPriority, setNewPriority] = useState("");
+
+  const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user"));
   const department_id = user?.department_id;
@@ -82,7 +89,7 @@ export default function HodDashboard() {
     if (!department_id) return;
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/higher-authority/getApplications/${department_id}`
+        `http://localhost:5000/api/higher-authority/getApplications/${department_id}`,
       );
       if (res.data.success) {
         setApplications(res.data.applications);
@@ -102,21 +109,29 @@ export default function HodDashboard() {
   }, [fetchApplications]);
 
   const pendingApplications = useMemo(
-    () => applications.filter((a) => a.status === "Pending"),
-    [applications]
+    () =>
+      applications.filter(
+        (a) => a.status === "pending" || a.stage === "submitted",
+      ),
+    [applications],
   );
   const completedApplications = useMemo(
-    () => applications.filter((a) => a.status !== "Pending"),
-    [applications]
+    () =>
+      applications.filter(
+        (a) =>
+          a.status !== "pending" ||
+          a.stage === "completed" ||
+          a.stage === "closed",
+      ),
+    [applications],
   );
 
-  // 🔹 Color helpers
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
       case "high":
         return "bg-red-100 text-red-700";
-      case "medium":
-        return "bg-yellow-100 text-yellow-700";
+      case "critical":
+        return "bg-purple-800 text-white";
       case "low":
         return "bg-green-100 text-green-700";
       default:
@@ -156,7 +171,7 @@ export default function HodDashboard() {
       render: (val) => (
         <span
           className={`px-2 inline-flex text-xs font-semibold rounded-full ${getPriorityColor(
-            val
+            val,
           )}`}
         >
           {val}
@@ -169,7 +184,7 @@ export default function HodDashboard() {
       render: (val) => (
         <span
           className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(
-            val
+            val,
           )}`}
         >
           {val}
@@ -185,7 +200,7 @@ export default function HodDashboard() {
       key: "actions",
       header: "Actions",
       render: (_, row) => (
-        <div className="flex space-x-2">
+        <div className="flex space-x-3">
           <button
             onClick={() => {
               const url = row.cloudinary_url;
@@ -195,6 +210,16 @@ export default function HodDashboard() {
             className="text-gray-600 hover:text-blue-600"
           >
             <Eye className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => {
+              setSelectedApplication(row);
+              setNewPriority(row.priority);
+              setShowPriorityModal(true);
+            }}
+            className="text-gray-600 hover:text-indigo-600"
+          >
+            <Edit className="h-5 w-5" />
           </button>
         </div>
       ),
@@ -224,6 +249,24 @@ export default function HodDashboard() {
     }));
   }, [applications]);
 
+  const handlePriorityUpdate = async () => {
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/higher-authority/updatePriority/${selectedApplication.application_id}`,
+        { priority: newPriority },
+      );
+
+      if (res.data.success) {
+        toast.success("Priority updated successfully");
+        setShowPriorityModal(false);
+        fetchApplications(); // refresh table
+      }
+    } catch (error) {
+      console.error("Error updating priority:", error);
+      toast.error("Failed to update priority");
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -231,13 +274,23 @@ export default function HodDashboard() {
       <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
         <div className="max-w-7xl mx-auto">
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-            <div className="flex-grow">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Head of Department Dashboard
-              </h1>
-              <p className="text-md text-gray-600 mt-1">
-                Manage and review applications from your department
-              </p>
+            <div className="flex items-start gap-4">
+              {/* 🔙 Back Button */}
+              <button
+                onClick={() => navigate(-1)}
+                className="mt-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                ← Back
+              </button>
+
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Head of Department Dashboard
+                </h1>
+                <p className="text-md text-gray-600 mt-1">
+                  Manage and review applications from your department
+                </p>
+              </div>
             </div>
           </header>
 
@@ -319,6 +372,39 @@ export default function HodDashboard() {
             )}
           </div>
         </div>
+        {showPriorityModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="bg-white p-6 rounded-xl shadow-xl w-96">
+              <h2 className="text-lg font-semibold mb-4">Change Priority</h2>
+
+              <select
+                value={newPriority}
+                onChange={(e) => setNewPriority(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg p-2 mb-4"
+              >
+                <option value="low">Low</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowPriorityModal(false)}
+                  className="px-4 py-2 bg-gray-200 rounded-lg"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handlePriorityUpdate}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  Update
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <Footer />
     </>
