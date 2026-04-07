@@ -4,6 +4,8 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -12,6 +14,20 @@ const LoginPage = () => {
   });
 
   const [loading, setLoading] = useState(false);
+
+  const handleLoginSuccess = (user, token) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("role_id", String(user.role_id));
+
+    const role = Number(user.role_id);
+    if (role === 1) navigate("/student/dashboard");
+    else if (role === 2) navigate("/incharge/landingpage");
+    else if (role === 3) navigate("/higher-authority/landingpage");
+    else if (role === 4) navigate("/student/dashboard");
+    else navigate("/");
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -52,22 +68,13 @@ const LoginPage = () => {
       setLoading(true);
       const res = await axios.post(
         "http://localhost:5000/api/auth/login",
-        formData
+        formData,
       );
 
       if (res.data.success) {
         toast.success("Login successful!");
-        // Store token if needed
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        const role = res.data.user.role_id;
-        // Redirect after login
         setTimeout(() => {
-          if (role === 1) navigate("/student/dashboard");
-          else if (role === 2) navigate("/incharge/landingpage");
-          else if (role === 3) navigate("/higher-authority/landingpage");
-          else if (role === 4) navigate("/student/dashboard");
-          else navigate("/");
+          handleLoginSuccess(res.data.user, res.data.token);
         }, 1000);
       } else {
         toast.error(res.data.message || "Invalid credentials");
@@ -146,6 +153,39 @@ const LoginPage = () => {
                 Reset Password
               </Link>
             </div> */}
+          </div>
+
+          {/*  Google Login */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Try Google Login
+            </label>
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                try {
+                  const res = await axios.post(
+                    "http://localhost:5000/api/auth/google-login",
+                    {
+                      credential: credentialResponse.credential, // send the raw token
+                    },
+                  );
+
+                  if (res.data.success) {
+                    toast.success("Google Login successful!");
+                    setTimeout(() => {
+                      handleLoginSuccess(res.data.user, res.data.token);
+                    }, 1000);
+                  } else {
+                    toast.error(res.data.message || "Google login failed");
+                  }
+                } catch (error) {
+                  toast.error(
+                    error.response?.data?.message || "Google login failed",
+                  );
+                }
+              }}
+              onError={() => toast.error("Google Login Failed")}
+            />
           </div>
 
           <div className="flex justify-center">
