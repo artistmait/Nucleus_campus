@@ -11,7 +11,7 @@ export const getInchargeApplications = async (req, res) => {
          a.application_id,
          a.type,
          a.status,
-         a.stage,
+         COALESCE(a.stage, 'submitted') AS stage,
          a.priority,
          a.deadline,
          a.created_at,

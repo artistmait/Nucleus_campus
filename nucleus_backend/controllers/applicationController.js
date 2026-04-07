@@ -75,8 +75,8 @@ export const submitApplication = async (req, res) => {
     const newapp_id = `APN-${String(seq).padStart(4, "0")}`;
 
     const newApp = await client.query(
-      `INSERT INTO applications (student_id, incharge_id, document_id, type, status, priority, deadline,department_id,application_id)
-       VALUES ($1, $2, $3, $4, 'pending', $5, $6,$7,$8)
+      `INSERT INTO applications (student_id, incharge_id, document_id, type, status, stage, priority, deadline, department_id, application_id)
+       VALUES ($1, $2, $3, $4, 'pending', 'submitted', $5, $6, $7, $8)
        RETURNING *`,
       [
         student_id,
@@ -151,7 +151,7 @@ export const getMyApplications = async (req, res) => {
          a.application_id AS application_id,
          a.type,
          a.status,
-         a.stage,
+         COALESCE(a.stage, 'submitted') AS stage,
          a.priority,
          a.deadline,
          a.created_at,

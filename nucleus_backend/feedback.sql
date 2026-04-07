@@ -1,7 +1,11 @@
 CREATE TABLE feedback (
-  id INT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   user_id INT NOT NULL REFERENCES users(id) on DELETE CASCADE,
   feedback TEXT NOT NULL,
+  q1 VARCHAR(20),
+  q2 VARCHAR(20),
+  q3 VARCHAR(20),
+  other_text TEXT,
   sentiment INT NOT NULL,
   sentiment_text VARCHAR(10) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

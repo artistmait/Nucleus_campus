@@ -158,16 +158,25 @@ export default function MyApplications() {
     }
   };
 
-  const sendFeedback = async (feedbackText) => {
+  const sendFeedback = async (feedbackData) => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
+      if (!user?.id) {
+        toast.error("Please log in to submit feedback.");
+        return;
+      }
 
-      await axios.post("http://localhost:5000/api/predict/feedback", {
+      const res = await axios.post("http://localhost:5000/api/predict/feedback", {
         user_id: user.id,
-        feedbackText: feedbackText,
+        ...feedbackData,
       });
 
-      toast.success("Thank you for your feedback!");
+      const sentiment = res.data?.feedback?.sentiment_text;
+      toast.success(
+        sentiment
+          ? `Thank you for your feedback!`
+          : "Thank you for your feedback!",
+      );
     } catch (err) {
       console.error(err);
       toast.error("Failed to submit feedback.");
