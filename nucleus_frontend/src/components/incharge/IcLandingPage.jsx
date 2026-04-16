@@ -103,7 +103,7 @@ export const IcLandingPage = () => {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center text-gray-500">
+        <div className="min-h-screen flex items-center justify-center text-gray-500 bg-[#f7f9fb]">
           Loading dashboard...
         </div>
         <Footer />
@@ -115,22 +115,22 @@ export const IcLandingPage = () => {
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gray-100 px-4 sm:px-6 lg:px-10 py-6 sm:py-10">
+      <div className="min-h-screen bg-[#f7f9fb] px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* HEADER */}
           <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+            <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight">
               Incharge Dashboard
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-[#464554] mt-2 text-lg">
               Branch-wise overview and analytics
             </p>
           </div>
 
           {/* BRANCH CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {branches.map((branch) => (
-              <Card
+              <div
                 key={branch}
                 onClick={() =>
                   navigate(`/incharge/dashboard?branch=${encodeURIComponent(branch)}`)
@@ -138,36 +138,36 @@ export const IcLandingPage = () => {
                 className="
                   cursor-pointer
                   h-32 sm:h-36 lg:h-40
-                  flex items-center justify-center
+                  flex flex-col items-center justify-center
                   transition-all duration-300
-                  hover:shadow-xl hover:-translate-y-2
-                  hover:border-blue-500
-                  border-2 bg-white
+                  rounded-[24px] bg-white
+                  shadow-[0_4px_20px_rgba(49,46,129,0.04)]
+                  hover:shadow-[0_12px_40px_rgba(49,46,129,0.06)] hover:-translate-y-1
                 "
               >
                 <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-bold text-gray-800">{branch}</h2>
-                  <p className="text-sm text-gray-500">
+                  <h2 className="text-2xl font-bold text-[#191c1e]">{branch}</h2>
+                  <p className="text-[11px] font-semibold text-[#464554] uppercase tracking-[0.05em]">
                     View students & applications
                   </p>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
 
           {/* VISUALIZATIONS */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="grid grid-cols-1 xl:grid-rows-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 gap-6 lg:gap-8">
               {/* PIE CHART */}
-              <Card>
-                <CardHeader>
-                  <h3 className="text-lg font-semibold">
+              <div className="bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_rgba(49,46,129,0.04)]">
+                <div className="mb-8 border-none">
+                  <h3 className="text-xl font-bold text-[#191c1e]">
                     Students Distribution (Branch-wise)
                   </h3>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="w-full">
                   {pieData.length === 0 ? (
-                    <p className="text-center text-gray-500">
+                    <p className="text-center text-[#464554] py-10">
                       No data available
                     </p>
                   ) : (
@@ -181,22 +181,25 @@ export const IcLandingPage = () => {
                           cy="50%"
                           outerRadius={100}
                           label
+                          stroke="none"
                         />
-                        <Tooltip />
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: 'none', borderRadius: '12px', boxShadow: '0 4px 20px rgba(49,46,129,0.08)' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   )}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <h3 className="text-lg font-semibold">
+                </div>
+              </div>
+              
+              {/* SENTIMENT CHART */}
+              <div className="bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_rgba(49,46,129,0.04)]">
+                <div className="mb-8 border-none">
+                  <h3 className="text-xl font-bold text-[#191c1e]">
                     Sentiment Distribution
                   </h3>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="w-full">
                   {sentimentPieData.length === 0 ? (
-                    <p className="text-center text-gray-500">
+                    <p className="text-center text-[#464554] py-10">
                       No data available
                     </p>
                   ) : (
@@ -210,72 +213,54 @@ export const IcLandingPage = () => {
                           cy="50%"
                           outerRadius={100}
                           label
+                          stroke="none"
                         />
-                        <Tooltip />
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: 'none', borderRadius: '12px', boxShadow: '0 4px 20px rgba(49,46,129,0.08)' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 xl:grid-rows-2 gap-6">
-              {/* BAR CHART */}
-              {/* <Card>
-                <CardHeader>
-                  <h3 className="text-lg font-semibold">
-                    Applications by Branch
-                  </h3>
-                </CardHeader>
-                <CardContent>
-                  {barData.length === 0 ? (
-                    <p className="text-center text-gray-500">
-                      No data available
-                    </p>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={barData}>
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar
-                          dataKey="applications"
-                          fill="#3B82F6"
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card> */}
-              {/* line chart */}
-              <Card>
-                <CardHeader>
-                  <h3 className="text-lg font-semibold">
+            
+            <div className="grid grid-cols-1 gap-6 lg:gap-8 h-full">
+              {/* LINE CHART */}
+              <div className="bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_rgba(49,46,129,0.04)] flex flex-col h-full min-h-[400px]">
+                <div className="mb-8 border-none">
+                  <h3 className="text-xl font-bold text-[#191c1e]">
                     Sentiment trend
                   </h3>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="w-full flex-grow">
                   {feedbackTrendData.length === 0 ? (
-                    <p className="text-center text-gray-500">
+                    <p className="text-center text-[#464554] py-10">
                       No data available
                     </p>
                   ) : (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                       <LineChart data={feedbackTrendData}>
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
+                        <XAxis dataKey="date" stroke="#c7c4d7" tick={{fill: '#464554', fontSize: 12}} dy={10} />
+                        <YAxis stroke="#c7c4d7" tick={{fill: '#464554', fontSize: 12}} dx={-10} />
+                        <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: 'none', borderRadius: '12px', boxShadow: '0 4px 20px rgba(49,46,129,0.08)' }} />
                         <Line
                           type="monotone"
                           dataKey="feedbacks"
-                          stroke="#3B82F6"
-                          strokeWidth={2}
+                          stroke="url(#colorUv)"
+                          strokeWidth={4}
+                          dot={{ r: 4, strokeWidth: 2, fill: "#ffffff", stroke: "#4338ca" }}
+                          activeDot={{ r: 8, strokeWidth: 2, fill: "#ffffff", stroke: "#2a14b4" }}
                         />
+                        <defs>
+                          <linearGradient id="colorUv" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="5%" stopColor="#2a14b4" stopOpacity={1}/>
+                            <stop offset="95%" stopColor="#4338ca" stopOpacity={1}/>
+                          </linearGradient>
+                        </defs>
                       </LineChart>
                     </ResponsiveContainer>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           </div>
         </div>

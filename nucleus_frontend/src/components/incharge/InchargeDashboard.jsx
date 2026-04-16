@@ -18,14 +18,14 @@ import Table from "../ui/ApprovalsTable";
 import "react-toastify/dist/ReactToastify.css";
 
 /* ================= STAT CARD ================= */
-const StatCard = ({ title, value, icon: Icon, color }) => (
-  <div className="bg-white p-5 rounded-xl border border-gray-200 flex justify-between items-center shadow-sm">
-    <div>
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-3xl font-bold text-gray-800">{value}</p>
+const StatCard = ({ title, value, icon: Icon, color, iconColor }) => (
+  <div className="bg-white p-6 rounded-[24px] shadow-[0_4px_20px_rgba(49,46,129,0.04)] flex justify-between items-center transition-all duration-300 hover:shadow-[0_12px_40px_rgba(49,46,129,0.06)] hover:-translate-y-1">
+    <div className="space-y-1">
+      <p className="text-[13px] font-medium text-[#464554] uppercase tracking-[0.05em]">{title}</p>
+      <p className="text-4xl font-bold text-[#191c1e]">{value}</p>
     </div>
-    <div className={`p-3 rounded-full ${color}`}>
-      <Icon className="h-6 w-6 text-gray-700" />
+    <div className={`p-4 rounded-full ${color}`}>
+      <Icon className={`h-7 w-7 ${iconColor || "text-gray-700"}`} />
     </div>
   </div>
 );
@@ -47,6 +47,20 @@ export default function InchargeDashboard() {
 
   const [loading, setLoading] = useState(true);
 
+  const getPriorityColor = (priority) => {
+    const value = (priority || "").toLowerCase();
+    switch (value) {
+      case "critical":
+        return "bg-purple-800 text-white";
+      case "high":
+        return "bg-red-100 text-red-700";
+      case "low":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
@@ -59,6 +73,7 @@ export default function InchargeDashboard() {
 
         if (res.data.success) {
           let apps = res.data.applications;
+
 
           if (branchFilter) {
             apps = apps.filter((a) => a.branch === branchFilter);
@@ -79,7 +94,20 @@ export default function InchargeDashboard() {
     };
 
     fetchApplications();
+
+    // Auto-listen to AI Agent SLA updates strictly for refreshing this dashboard seamlessly
+    const eventSource = new EventSource(`http://localhost:5000/api/notifications/stream/${user.id}`);
+    eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'critical') {
+            // Automatically refresh the table data when HOD intervenes or SLA Agent fires
+            fetchApplications();
+        }
+    };
+
+    return () => eventSource.close();
   }, [branchFilter]);
+
 
   const handleNotesUpdate = async () => {
     try {
@@ -150,6 +178,15 @@ export default function InchargeDashboard() {
     { key: "student_name", header: "Student Name" },
     { key: "type", header: "Type" },
     {
+      key: "priority",
+      header: "Priority",
+      render: (_, row) => (
+        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPriorityColor(row.priority)} ${row.priority === 'critical' ? 'animate-pulse border border-purple-400' : ''}`}>
+           {row.priority ? row.priority.toUpperCase() : 'NORMAL'}
+        </span>
+      ),
+    },
+    {
       key: "actions",
       header: "Actions",
       render: (_, row) => (
@@ -201,6 +238,15 @@ export default function InchargeDashboard() {
     { key: "student_name", header: "Student Name" },
     { key: "type", header: "Type" },
     {
+      key: "priority",
+      header: "Priority",
+      render: (_, row) => (
+        <span className={`px-3 py-1 text-xs font-extrabold tracking-wider rounded-md ${row.priority === 'critical' ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-gray-50 text-gray-500'}`}>
+           {row.priority ? row.priority.toUpperCase() : 'NORMAL'}
+        </span>
+      ),
+    },
+    {
       key: "actions",
       header: "Actions",
       render: (_, row) => (
@@ -248,48 +294,59 @@ export default function InchargeDashboard() {
       <Navbar />
       <ToastContainer position="top-center" />
 
-      <div className="bg-gray-50 min-h-screen p-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Incharge Dashboard</h1>
+      <div className="bg-[#f7f9fb] min-h-screen px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div>
+            <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-2">
+              Incharge Dashboard
+            </h1>
+            <p className="text-[#464554] text-lg">
+              Manage operations and applications
+            </p>
+          </div>
 
           {/* ===== STATUS CARDS ===== */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             <StatCard
               title="Total Applications"
               value={allApps.length}
               icon={FileText}
-              color="bg-blue-100"
+              color="bg-[#e3dfff]"
+              iconColor="text-[#2a14b4]"
             />
             <StatCard
               title="Pending Applications"
               value={pendingCount}
               icon={Clock}
-              color="bg-yellow-100"
+              color="bg-amber-100"
+              iconColor="text-amber-600"
             />
             <StatCard
               title="Completed Applications"
               value={completedApps.length}
               icon={CheckCircleIcon}
-              color="bg-green-100"
+              color="bg-[#ecfdf5]"
+              iconColor="text-[#10B981]"
             />
             <StatCard
               title="Avg Processing Time (Days)"
               value={averageProcessingTime}
               icon={TrendingUp}
-              color="bg-indigo-100"
+              color="bg-[#e0e3e5]"
+               iconColor="text-[#464554]"
             />
           </div>
 
           {/* TABS */}
-          <div className="flex space-x-6 border-b mb-6">
+          <div className="flex space-x-2 border-b-2 border-[#e0e3e5] mb-6 overflow-x-auto pb-1">
             {["submitted", "reviewed", "completed", "closed"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-3 font-semibold capitalize ${
+                className={`px-5 py-3 text-[14px] font-semibold uppercase tracking-wider rounded-t-xl transition-all duration-300 ${
                   activeTab === tab
-                    ? "border-b-2 border-indigo-600 text-indigo-600"
-                    : "text-gray-500"
+                    ? "text-[#4338ca] bg-[#ffffff] shadow-[0_-4px_12px_rgba(49,46,129,0.04)] border-b-2 border-[#4338ca]"
+                    : "text-[#464554] hover:bg-[#ffffff]/50 hover:text-[#191c1e]"
                 }`}
               >
                 {tab}
@@ -298,9 +355,11 @@ export default function InchargeDashboard() {
           </div>
 
           {/* TABLES */}
-          <div className="bg-white p-6 rounded-xl shadow-sm">
+          <div className="bg-white rounded-[24px] shadow-[0_4px_20px_rgba(49,46,129,0.04)] p-6 lg:p-8">
             {loading ? (
-              <p>Loading...</p>
+              <div className="flex justify-center items-center py-12">
+                <p className="text-[#464554] font-medium text-lg">Loading data...</p>
+              </div>
             ) : activeTab === "submitted" ? (
               <Table data={submittedApps} columns={submittedColumns} />
             ) : activeTab === "reviewed" ? (
@@ -313,32 +372,34 @@ export default function InchargeDashboard() {
           </div>
         </div>
       </div>
+      
+      {/* NOTES MODAL */}
       {showNotesModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-lg bg-opacity-40 z-50">
-          <div className="bg-white p-6 rounded-xl shadow-xl w-96">
-            <h2 className="text-lg font-semibold mb-4">Update Notes</h2>
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-[#191c1e]/20 z-50 transition-opacity">
+          <div className="bg-white p-8 rounded-[24px] shadow-[0_12px_40px_rgba(49,46,129,0.12)] w-[400px] border border-[#ffffff]">
+            <h2 className="text-xl font-bold text-[#191c1e] tracking-tight mb-6">Update Notes</h2>
 
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
-              className="w-full border border-gray-300 rounded-lg p-2 mb-4"
-              placeholder="Enter notes..."
+              className="w-full bg-[#f7f9fb] border-none rounded-xl p-4 mb-6 text-[#191c1e] placeholder:text-[#outline-variant] focus:ring-2 focus:ring-[#4338ca] focus:outline-none transition-all shadow-inner"
+              placeholder="Enter comprehensive notes..."
             />
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setShowNotesModal(false)}
-                className="px-4 py-2 bg-gray-200 rounded-lg"
+                className="px-5 py-2.5 bg-transparent text-[#464554] font-semibold rounded-xl hover:bg-[#f2f4f6] transition-colors"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleNotesUpdate}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="px-6 py-2.5 bg-gradient-to-br from-[#2a14b4] to-[#4338ca] text-white font-semibold rounded-xl hover:shadow-[0_4px_12px_rgba(67,56,202,0.4)] hover:-translate-y-0.5 transition-all"
               >
-                Save
+                Save Note
               </button>
             </div>
           </div>

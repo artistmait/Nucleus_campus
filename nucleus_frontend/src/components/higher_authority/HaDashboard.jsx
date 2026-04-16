@@ -11,6 +11,7 @@ import {
   XCircle,
   User2Icon,
   Edit,
+  BellRing,
 } from "lucide-react";
 import Navbar from "../main/Navbar";
 import Footer from "../main/Footer";
@@ -18,15 +19,15 @@ import Table from "../ui/ApprovalsTable";
 import "react-toastify/dist/ReactToastify.css";
 
 //Stat Card Component
-const StatCard = ({ title, icon: IconComponent, value, iconBgColor }) => (
+const StatCard = ({ title, icon: IconComponent, value, iconBgColor, iconColor }) => (
   <div className="bg-white p-5 rounded-xl border border-gray-200 flex justify-between items-center">
     <div>
       <p className="text-sm text-gray-500">{title}</p>
       <p className="text-3xl font-bold text-gray-800">{value}</p>
     </div>
-    <div className={`p-3 rounded-full ${iconBgColor}`}>
+    <div className={`p-3 rounded-full ${iconBgColor || ''}`}>
       {IconComponent ? (
-        <IconComponent className="h-6 w-6 text-gray-700" />
+        <IconComponent className={`h-6 w-6 ${iconColor || 'text-gray-700'}`} />
       ) : null}
     </div>
   </div>
@@ -217,10 +218,20 @@ export default function HodDashboard() {
               setNewPriority(row.priority);
               setShowPriorityModal(true);
             }}
-            className="text-indigo-800 hover:text-indigo-100"
+            title="Edit Priority"
+            className="text-indigo-800 hover:text-indigo-600 transition-colors"
           >
             <Edit className="h-5 w-5" />
           </button>
+          {row.status === 'pending' && (
+              <button
+                onClick={() => handleQuickEscalate(row.application_id)}
+                title="Immediate AI Escalation"
+                className="text-red-600 hover:text-red-800 transition-colors"
+              >
+                <BellRing className="h-5 w-5" />
+              </button>
+          )}
         </div>
       ),
     },
@@ -267,27 +278,43 @@ export default function HodDashboard() {
     }
   };
 
+  const handleQuickEscalate = async (appId) => {
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/higher-authority/updatePriority/${appId}`,
+        { priority: 'critical' },
+      );
+
+      if (res.data.success) {
+        toast.error("Urgent Escalation Triggered! In-Charge notified immediately.");
+        fetchApplications();
+      }
+    } catch (error) {
+      console.error("Error escalating:", error);
+      toast.error("Failed to escalate application");
+    }
+  };
+
   return (
     <>
       <Navbar />
       <ToastContainer position="top-center" />
-      <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
-        <div className="max-w-7xl mx-auto">
-          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-            <div className="flex items-start gap-4">
-              {/* Back Button */}
+      <div className="min-h-screen bg-[#f7f9fb] px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24 font-sans">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <button
                 onClick={() => navigate(-1)}
-                className="mt-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                className="px-5 py-2.5 bg-transparent text-[#464554] font-semibold rounded-xl hover:bg-[#e0e3e5] transition-colors"
               >
                 ← Back
               </button>
 
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight">
                   Head of Department Dashboard
                 </h1>
-                <p className="text-md text-gray-600 mt-1">
+                <p className="text-[#464554] mt-2 text-lg">
                   Manage and review applications from your department
                 </p>
               </div>
@@ -295,19 +322,17 @@ export default function HodDashboard() {
           </header>
 
           {/* Stats Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {[
               {
                 title: "Total Applications",
                 value: applications.length.toString(),
                 icon: FileText,
-                iconBgColor: "bg-blue-100",
               },
               {
                 title: "Pending",
                 value: pendingApplications.length.toString(),
                 icon: Clock,
-                iconBgColor: "bg-yellow-100",
               },
               {
                 title: "Approved",
@@ -315,7 +340,7 @@ export default function HodDashboard() {
                   .filter((a) => a.status === "Approved")
                   .length.toString(),
                 icon: CheckCircleIcon,
-                iconBgColor: "bg-green-100",
+                iconColor: "text-[#10B981]",
               },
               {
                 title: "Rejected",
@@ -323,7 +348,7 @@ export default function HodDashboard() {
                   .filter((a) => a.status === "Rejected")
                   .length.toString(),
                 icon: XCircle,
-                iconBgColor: "bg-red-100",
+                iconColor: "text-[#e11d48]",
               },
             ].map((stat, i) => (
               <StatCard key={i} {...stat} />
@@ -331,28 +356,26 @@ export default function HodDashboard() {
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-gray-200 mb-6">
-            <nav className="-mb-px flex space-x-6">
+          <div className="flex space-x-2 border-b-2 border-[#e0e3e5] mb-8 overflow-x-auto no-scrollbar">
               {["pending", "completed", "overview"].map((tab) => (
                 <button
                   key={tab}
-                  className={`py-3 px-1 border-b-2 text-sm font-semibold ${
+                  className={`py-3 px-6 font-semibold whitespace-nowrap transition-colors duration-200 capitalize ${
                     activeTab === tab
-                      ? "border-blue-600 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "text-[#4338ca] border-b-2 border-[#4338ca] -mb-[2px]"
+                      : "text-[#464554] hover:text-[#191c1e]"
                   }`}
                   onClick={() => setActiveTab(tab)}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
-            </nav>
           </div>
 
           {/* Tab Content */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-[24px] p-6 lg:p-8 shadow-[0_4px_20px_rgba(49,46,129,0.04)] overflow-hidden border-none text-[#191c1e]">
             {loading ? (
-              <p className="text-gray-500 text-center py-8">
+              <p className="text-[#464554] text-center py-8 animate-pulse font-medium text-lg">
                 Loading applications...
               </p>
             ) : activeTab === "pending" ? (
@@ -360,7 +383,7 @@ export default function HodDashboard() {
             ) : activeTab === "completed" ? (
               <Table data={completedApplications} columns={columns} />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                 {departmentStats.map((dept, i) => (
                   <DepartmentCard
                     key={i}
@@ -372,34 +395,36 @@ export default function HodDashboard() {
             )}
           </div>
         </div>
+
         {showPriorityModal && (
-          <div className="fixed inset-0 flex items-center justify-center backdrop-blur-lg bg-opacity-40 z-50">
-            <div className="bg-white p-6 rounded-xl shadow-xl w-96">
-              <h2 className="text-lg font-semibold mb-4">Change Priority</h2>
+          <div className="fixed inset-0 flex items-center justify-center bg-[#191c1e]/20 backdrop-blur-md z-50 transition-opacity">
+            <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(49,46,129,0.12)] p-8 w-[400px] border border-[#ffffff]">
+              <h2 className="text-xl font-bold text-[#191c1e] tracking-tight mb-6">
+                Change Priority
+              </h2>
 
               <select
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-2 mb-4"
+                className="w-full border-2 border-dashed border-[#c7c4d7] rounded-xl p-4 mb-8 text-[#464554] bg-[#f7f9fb] font-semibold transition-all focus:border-[#4338ca] focus:ring-4 focus:ring-[#4338ca]/10 outline-none"
               >
-                <option value="low">Low</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                <option value="low">Low Priority</option>
+                <option value="high">High Priority</option>
+                <option value="critical">Critical Priority</option>
               </select>
 
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end gap-4">
                 <button
                   onClick={() => setShowPriorityModal(false)}
-                  className="px-4 py-2 bg-gray-200 rounded-lg"
+                  className="px-5 py-2.5 bg-transparent text-[#464554] font-semibold rounded-xl hover:bg-[#f2f4f6]"
                 >
                   Cancel
                 </button>
-
                 <button
                   onClick={handlePriorityUpdate}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="px-6 py-2.5 bg-gradient-to-br from-[#2a14b4] to-[#4338ca] text-white font-semibold rounded-xl hover:shadow-[0_4px_12px_rgba(67,56,202,0.4)] hover:-translate-y-0.5 transition-all"
                 >
-                  Update
+                  Update Priority
                 </button>
               </div>
             </div>

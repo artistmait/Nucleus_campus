@@ -1,8 +1,6 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
@@ -87,53 +85,43 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-indigo-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/50 to-indigo-100/80 p-4 relative overflow-hidden">
+      {/* Background Orbs for Glassmorphism Effect */}
+      <div className="absolute top-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-indigo-300 rounded-full mix-blend-multiply filter blur-[80px] opacity-40 animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[30rem] h-[30rem] bg-purple-300 rounded-full mix-blend-multiply filter blur-[80px] opacity-40"></div>
+      
       <ToastContainer position="top-center" autoClose={2500} hideProgressBar />
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-gray-100 px-12 py-14">
+      
+      <div className="z-10 w-full max-w-xl bg-white/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-white/60 px-8 py-12 sm:px-14 sm:py-16 transition-all duration-500 hover:shadow-[0_8px_40px_rgb(0,0,0,0.12)]">
         {/* Header */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-20 h-20 rounded-full bg-indigo-900 flex items-center justify-center shadow-md mb-4">
-            <span className="text-2xl font-bold text-white">L</span>
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-900 to-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-6 transform -rotate-6 hover:rotate-0 transition-transform duration-300">
+            <span className="text-3xl font-bold text-white">L</span>
           </div>
-          <h2 className="text-4xl font-extrabold text-gray-900">Login</h2>
-          <p className="text-gray-500 mt-1">Login to your account below</p>
+          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">Welcome Back</h2>
+          <p className="text-gray-500 mt-2 font-medium">Log in to your Nucleus account</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-7">
-          {/* Moodle ID */}
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Moodle Id
-            </label>
-            <input
-              type="text"
-              name="moodle_id"
-              value={formData.moodle_id}
-              onChange={handleChange}
-              placeholder="Enter your Moodle ID"
-              className="w-full px-5 py-3 border border-gray-300 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-            />
-          </div> */}
-
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* EMAIL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700 ml-1">
+              Email Address
             </label>
             <input
-              type="text"
+              type="email"
               name="user_email"
               value={formData.user_email}
               onChange={handleChange}
               placeholder="Enter your Email ID"
-              className="w-full px-5 py-3 border border-gray-300 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="w-full px-5 py-4 bg-white/50 border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all duration-300 shadow-sm"
             />
           </div>
 
           {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700 ml-1">
               Password
             </label>
             <input
@@ -142,74 +130,72 @@ const LoginPage = () => {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
-              className="w-full px-5 py-3 border border-gray-300 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-            />
-            {/* <div className="mt-10 text-center text-sm text-gray-600">
-              Forgot Password?{" "}
-              <Link
-                to="/auth/login"
-                className="text-indigo-900 font-semibold hover:underline"
-              >
-                Reset Password
-              </Link>
-            </div> */}
-          </div>
-
-          {/*  Google Login */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Try Google Login
-            </label>
-            <GoogleLogin
-              onSuccess={async (credentialResponse) => {
-                try {
-                  const res = await axios.post(
-                    "http://localhost:5000/api/auth/google-login",
-                    {
-                      credential: credentialResponse.credential, // send the raw token
-                    },
-                  );
-
-                  if (res.data.success) {
-                    toast.success("Google Login successful!");
-                    setTimeout(() => {
-                      handleLoginSuccess(res.data.user, res.data.token);
-                    }, 1000);
-                  } else {
-                    toast.error(res.data.message || "Google login failed");
-                  }
-                } catch (error) {
-                  toast.error(
-                    error.response?.data?.message || "Google login failed",
-                  );
-                }
-              }}
-              onError={() => toast.error("Google Login Failed")}
+              className="w-full px-5 py-4 bg-white/50 border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all duration-300 shadow-sm"
             />
           </div>
 
-          <div className="flex justify-center">
-            {/* Submit */}
+          <div className="flex justify-center pt-2">
             <button
               type="submit"
               disabled={loading}
-              className={`w-75 h-15 py-3 font-semibold rounded-full shadow-md transition ${
+              className={`w-full py-4 text-lg font-bold rounded-2xl shadow-lg transition-all duration-300 transform ${
                 loading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-indigo-900 text-white hover:bg-indigo-800"
+                  ? "bg-gray-400 cursor-not-allowed scale-100"
+                  : "bg-gradient-to-r from-indigo-900 to-indigo-700 text-white hover:shadow-indigo-500/30 hover:-translate-y-1 active:translate-y-0"
               }`}
             >
-              {loading ? "Logging In..." : "Login"}
+              {loading ? "Logging In..." : "Log In"}
             </button>
+          </div>
+
+          <div className="relative flex items-center my-8">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR CONTINUE WITH</span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+
+          {/* Google Login Section */}
+          <div className="flex justify-center w-full px-2">
+            <div className="w-full overflow-hidden rounded-2xl flex justify-center py-1">
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  try {
+                    const res = await axios.post(
+                      "http://localhost:5000/api/auth/google-login",
+                      {
+                        credential: credentialResponse.credential, // send the raw token
+                      },
+                    );
+
+                    if (res.data.success) {
+                      toast.success("Google Login successful!");
+                      setTimeout(() => {
+                        handleLoginSuccess(res.data.user, res.data.token);
+                      }, 1000);
+                    } else {
+                      toast.error(res.data.message || "Google login failed");
+                    }
+                  } catch (error) {
+                    toast.error(
+                      error.response?.data?.message || "Google login failed",
+                    );
+                  }
+                }}
+                onError={() => toast.error("Google Login Failed")}
+                theme="outline"
+                size="large"
+                shape="pill"
+              />
+            </div>
           </div>
         </form>
 
         {/* Footer */}
-        <div className="mt-10 text-center text-sm text-gray-600">
+        <div className="mt-10 text-center text-sm text-gray-600 font-medium">
           Do not have an account?{" "}
           <Link
             to="/"
-            className="text-indigo-900 font-semibold hover:underline"
+            className="text-indigo-700 font-bold hover:text-indigo-900 hover:underline transition-colors duration-200"
           >
             Register here
           </Link>

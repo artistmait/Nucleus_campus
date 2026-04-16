@@ -76,107 +76,100 @@ const sentimentPieData = useMemo(() => {
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gray-100 px-6 py-10">
+      <div className="min-h-screen bg-[#f7f9fb] px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
         <div className="max-w-7xl mx-auto space-y-10">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-2">
                 {departmentName}
               </h1>
-              <p className="text-gray-600 mt-1">Higher Authority Overview</p>
+              <p className="text-[#464554] text-lg">Higher Authority Overview</p>
             </div>
 
             <button
               onClick={() => navigate("/higher-authority/dashboard")}
-              className="px-5 py-2 bg-indigo-800 text-white rounded-full shadow hover:bg-blue-700 transition"
+              className="px-6 py-3 bg-gradient-to-br from-[#2a14b4] to-[#4338ca] text-white rounded-xl shadow-[0_4px_12px_rgba(42,20,180,0.3)] hover:shadow-[0_6px_20px_rgba(42,20,180,0.4)] hover:-translate-y-0.5 transition-all font-semibold"
             >
               View All Applications
             </button>
           </div>
 
-          {/* {!loading && dashboardData && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-gray-500 text-sm">Total Students</h3>
-                  <p className="text-3xl font-bold text-gray-800 mt-2">
-                    {dashboardData.totalStudents}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-gray-500 text-sm">Total Applications</h3>
-                  <p className="text-3xl font-bold text-gray-800 mt-2">
-                    {dashboardData.totalApplications}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )} */}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {years.map((year) => (
-              <Card
+              <div
                 key={year}
                 onClick={() => navigate("/higher-authority/dashboard")}
-                className="cursor-pointer h-32 flex items-center justify-center hover:shadow-lg transition"
+                className="cursor-pointer h-32 flex flex-col items-center justify-center bg-white rounded-[24px] shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:shadow-[0_12px_40px_rgba(49,46,129,0.06)] hover:-translate-y-1 transition-all duration-300"
               >
-                <h2 className="text-2xl font-bold text-gray-700">{year}</h2>
-              </Card>
+                <h2 className="text-2xl font-bold text-[#191c1e] mb-1">{year}</h2>
+                <p className="text-[11px] font-semibold text-[#464554] uppercase tracking-[0.05em]">Filter by batch</p>
+              </div>
             ))}
           </div>
 
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold">Sentiment Distribution</h3>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={sentimentPieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
-                  >
-                    {sentimentPieData.map((entry, index) => (
-                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold">Sentiment trend</h3>
-            </CardHeader>
-            <CardContent>
-              {feedbackTrendData.length === 0 ? (
-                <p className="text-center text-gray-500">No data available</p>
-              ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            {/* PIE CHART */}
+            <div className="bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_rgba(49,46,129,0.04)]">
+              <div className="mb-8 border-none">
+                <h3 className="text-xl font-bold text-[#191c1e]">Sentiment Distribution</h3>
+              </div>
+              <div className="w-full">
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={feedbackTrendData}>
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="feedbacks"
-                      stroke="#3B82F6"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
+                  <PieChart>
+                    <Pie
+                      data={sentimentPieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label
+                      stroke="none"
+                    >
+                      {sentimentPieData.map((entry, index) => (
+                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: 'none', borderRadius: '12px', boxShadow: '0 4px 20px rgba(49,46,129,0.08)' }} />
+                  </PieChart>
                 </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+
+            {/* LINE CHART */}
+            <div className="bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_rgba(49,46,129,0.04)] flex flex-col">
+              <div className="mb-8 border-none">
+                <h3 className="text-xl font-bold text-[#191c1e]">Sentiment trend</h3>
+              </div>
+              <div className="w-full flex-grow">
+                {feedbackTrendData.length === 0 ? (
+                  <p className="text-center text-[#464554] py-10">No data available</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={feedbackTrendData}>
+                      <XAxis dataKey="date" stroke="#c7c4d7" tick={{fill: '#464554', fontSize: 12}} dy={10} />
+                      <YAxis stroke="#c7c4d7" tick={{fill: '#464554', fontSize: 12}} dx={-10} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: 'none', borderRadius: '12px', boxShadow: '0 4px 20px rgba(49,46,129,0.08)' }} />
+                      <Line
+                        type="monotone"
+                        dataKey="feedbacks"
+                        stroke="url(#colorUv2)"
+                        strokeWidth={4}
+                        dot={{ r: 4, strokeWidth: 2, fill: "#ffffff", stroke: "#4338ca" }}
+                        activeDot={{ r: 8, strokeWidth: 2, fill: "#ffffff", stroke: "#2a14b4" }}
+                      />
+                      <defs>
+                        <linearGradient id="colorUv2" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="5%" stopColor="#2a14b4" stopOpacity={1}/>
+                          <stop offset="95%" stopColor="#4338ca" stopOpacity={1}/>
+                        </linearGradient>
+                      </defs>
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
