@@ -2,6 +2,16 @@ import pool from "../config/dbConfig.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 import fs from "fs";
 import { transporter } from "../config/email.js";
+import notificationService from "../services/notificationService.js";
+
+export const STATUS_MESSAGES = {
+    under_review:  (appLabel) => `Your ${appLabel} application is now under review. We'll notify you once a decision is made.`,
+    approved:      (appLabel) => `Great news! Your ${appLabel} application has been approved.`,
+    rejected:      (appLabel, reason) => `Your ${appLabel} application was not approved${reason ? ': ' + reason : '. Please contact the office for details'}.`,
+    completed:     (appLabel) => `Your ${appLabel} application is fully processed and completed. You may collect your documents.`,
+    critical:      (appLabel) => `Action needed: Your ${appLabel} application has been escalated to CRITICAL priority — please visit the office.`,
+};
+
 
 export const submitApplication = async (req, res) => {
   const client = await pool.connect();
@@ -240,3 +250,29 @@ export const updateMyApplicationDocument = async (req, res) => {
     client.release();
   }
 };
+
+// export const notifyStudent = async (applicationId, newStatus, reason = null) => {
+//     const result = await pool.query(`
+//         SELECT a.*, u.name, u.id AS student_user_id
+//         FROM applications a
+//         JOIN users u ON a.user_id = u.id
+//         WHERE a.id = $1
+//     `, [applicationId]);
+
+//     const app = result.rows[0];
+//     if (!app) return;
+
+//     const appLabel = app.application_type
+//         .replace(/_/g, ' ')
+//         .replace(/\b\w/g, c => c.toUpperCase());
+
+//     const msgFn = STATUS_MESSAGES[newStatus];
+//     if (!msgFn) return;
+
+//     const type = ['rejected', 'critical'].includes(newStatus) ? 'critical' : 'info';
+//     await notificationService.sendNotification(
+//         app.student_user_id,
+//         msgFn(appLabel, reason),
+//         type
+//     );
+// };

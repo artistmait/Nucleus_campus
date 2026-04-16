@@ -7,6 +7,8 @@ import applicationRouter from './routes/applicationRoute.js';
 import inchargeRouter from './routes/inchargeRoute.js';
 import higherauthRouter from './routes/higherauthRoutes.js';
 import feedbackRouter from './routes/feedbackRoute.js';
+import notificationRouter from './routes/notificationRoute.js';
+import { startSlaAgent } from './services/slaAgent.js';
 
 
 const app = express();
@@ -28,6 +30,11 @@ app.use('/api/higher-authority',higherauthRouter);
 //ml routes
 app.use('/api/predict',feedbackRouter)
 
+//notifications
+app.use('/api/notifications', notificationRouter);
+
+// Start SLA Agent Engine
+startSlaAgent();
 
 const server = app.listen(PORT, () => {
         console.log(`Server started on port ${PORT}`);

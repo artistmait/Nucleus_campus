@@ -1,4 +1,5 @@
 import pool from "../config/dbConfig.js";
+import notificationService from "../services/notificationService.js";
 
 export const getDepartmentApplications = async (req, res) => {
   const { department_id } = req.params; // coming from route param
@@ -164,6 +165,47 @@ export const updateApplicationPriority = async (req, res) => {
         success: false,
         message: "Application not found",
       });
+    }
+
+    if (priority.toLowerCase() === "critical") {
+      // Get student name and app type for the message
+      const detailsResult = await pool.query(
+        `SELECT 
+           a.application_id,
+           a.type AS application_type,
+           a.incharge_id,
+           a.student_id,
+           u.username AS student_name
+         FROM applications a
+         JOIN users u ON a.student_id = u.id
+         WHERE a.application_id = $1`,
+        [application_id],
+      );
+
+      if (detailsResult.rowCount > 0) {
+        const d = detailsResult.rows[0];
+        const appLabel = d.application_type
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        // ✅ Fix: notify incharge if exists
+        if (d.incharge_id) {
+          await notificationService.sendNotification(
+            d.incharge_id,
+            `${d.student_name}'s ${appLabel} application (#${application_id}) was manually escalated to CRITICAL by the HOD.`,
+            "critical",
+          );
+        }
+
+        // ✅ New: also notify the student
+        if (d.student_id) {
+          await notificationService.sendNotification(
+            d.student_id,
+            `Your ${appLabel} application (#${application_id}) has been marked as CRITICAL priority by the HOD.`,
+            "critical",
+          );
+        }
+      }
     }
 
     res.json({

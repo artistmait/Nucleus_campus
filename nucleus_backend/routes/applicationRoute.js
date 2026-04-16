@@ -22,4 +22,6 @@ applicationRouter.put(
   updateMyApplicationDocument
 );
 
+// applicationRouter.get('/api/notifications/:student_id',notifyStudent);
+
 export default applicationRouter;

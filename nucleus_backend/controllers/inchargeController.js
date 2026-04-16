@@ -1,5 +1,7 @@
 import pool from "../config/dbConfig.js";
 import { transporter } from "../config/email.js";
+import notificationService from "../services/notificationService.js";
+import { STATUS_MESSAGES } from "./applicationController.js";
 
 // Get applications assigned to a specific incharge
 export const getInchargeApplications = async (req, res) => {
@@ -111,6 +113,8 @@ export const updateApplicationStatus = async (req, res) => {
          a.deadline,
          a.created_at,
          a.student_id,
+         a.incharge_id,
+         a.department_id,
          a.app_notes,
          u.username AS student_name,
          u.moodle_id,
@@ -125,6 +129,94 @@ export const updateApplicationStatus = async (req, res) => {
        WHERE a.application_id = $1`,
       [application_id],
     );
+
+    const application = fullData.rows[0];
+    const normalizedStatus =
+      typeof status === "string" ? status.toLowerCase() : null;
+    const appLabel = (application.type || "application")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const studentName = application.student_name || "A student";
+
+    const statusMessageMap = {
+      under_review: STATUS_MESSAGES.under_review,
+      approved: STATUS_MESSAGES.approved,
+      rejected: STATUS_MESSAGES.rejected,
+    };
+    const statusMessageFn = normalizedStatus
+      ? statusMessageMap[normalizedStatus]
+      : null;
+    const shouldNotifyStatus = Boolean(statusMessageFn);
+    const shouldNotifyCompletion = markCompleted === true;
+
+    if (shouldNotifyStatus || shouldNotifyCompletion) {
+      try {
+        const notificationPromises = [];
+        let haIds = [];
+
+        if (application.department_id) {
+          const haResult = await pool.query(
+            `SELECT id FROM users WHERE role_id = 3 AND department_id = $1`,
+            [application.department_id],
+          );
+          haIds = haResult.rows.map((row) => row.id);
+        }
+
+        if (shouldNotifyStatus) {
+          if (application.student_id) {
+            notificationPromises.push(
+              notificationService.sendNotification(
+                application.student_id,
+                statusMessageFn(appLabel),
+                "info",
+              ),
+            );
+          }
+
+          const haActionMap = {
+            under_review: "is now under review by the incharge",
+            approved: "was approved by the incharge",
+            rejected: "was rejected by the incharge",
+          };
+          const haAction = haActionMap[normalizedStatus];
+          if (haAction && haIds.length > 0) {
+            const haMessage = `${studentName}'s ${appLabel} application (#${application.application_id}) ${haAction}.`;
+            haIds.forEach((haId) => {
+              notificationPromises.push(
+                notificationService.sendNotification(haId, haMessage, "info"),
+              );
+            });
+          }
+        }
+
+        if (shouldNotifyCompletion) {
+          if (application.student_id) {
+            notificationPromises.push(
+              notificationService.sendNotification(
+                application.student_id,
+                STATUS_MESSAGES.completed(appLabel),
+                "info",
+              ),
+            );
+          }
+
+          if (haIds.length > 0) {
+            const haMessage = `${studentName}'s ${appLabel} application (#${application.application_id}) was marked completed by the incharge.`;
+            haIds.forEach((haId) => {
+              notificationPromises.push(
+                notificationService.sendNotification(haId, haMessage, "info"),
+              );
+            });
+          }
+        }
+
+        if (notificationPromises.length > 0) {
+          await Promise.all(notificationPromises);
+        }
+      } catch (notifyError) {
+        console.error("Error sending notifications:", notifyError);
+      }
+    }
 
     res.json({
       success: true,
