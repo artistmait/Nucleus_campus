@@ -5,19 +5,19 @@ const StatCard = ({ icon, title, value, change, changeType }) => {
   const isPositive = changeType === 'positive';
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col justify-between">
+    <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-[0_4px_20px_rgba(49,46,129,0.04)] flex flex-col justify-between transition-all duration-300 hover:shadow-[0_12px_40px_rgba(49,46,129,0.06)] hover:-translate-y-1">
       <div className="flex justify-between items-start">
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
+        <div className="space-y-1">
+          <p className="text-[13px] font-medium text-[#464554] uppercase tracking-[0.05em]">{title}</p>
+          <p className="text-4xl font-bold text-[#191c1e]">{value}</p>
         </div>
-        <div className="text-gray-400">
+        <div className="p-3 bg-[#f7f9fb] rounded-full text-[#4338ca]">
           {icon}
         </div>
       </div>
-      <div className="flex items-center mt-4">
-        <span className={`flex items-center text-xs font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-          {isPositive ? <TrendingUp className="mr-1" /> : <TrendingDown className="mr-1" />}
+      <div className="flex items-center mt-6">
+        <span className={`flex items-center text-xs font-semibold px-2 py-1 rounded-full ${isPositive ? 'bg-[#ecfdf5] text-[#10B981]' : 'bg-[#fff1f2] text-[#e11d48]'}`}>
+          {isPositive ? <TrendingUp className="mr-1 h-3.5 w-3.5" /> : <TrendingDown className="mr-1 h-3.5 w-3.5" />}
           {change}
         </span>
       </div>

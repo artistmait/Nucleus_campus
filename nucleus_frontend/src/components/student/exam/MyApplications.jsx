@@ -268,29 +268,29 @@ export default function MyApplications() {
   ];
 
   return (
-    <div className="w-full min-h-screen flex flex-col bg-gray-50">
+    <div className="w-full min-h-screen flex flex-col bg-[#f7f9fb]">
       <ToastContainer position="top-center" />
       <Navbar />
 
-      <main className="flex-grow w-full max-w-6xl mx-auto px-6 md:px-10 lg:px-14 py-12">
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
         {/* <button
                 onClick={() => navigate(-1)}
                 className="mt-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
               >
                 ← Back
               </button> */}
-        <h1 className="text-4xl font-bold text-indigo-900 mb-8">
+        <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-8">
           My Applications
         </h1>
 
         {loading ? (
           <div className="flex items-center justify-center h-60">
-            <p className="text-gray-600 animate-pulse">
+            <p className="text-[#464554] font-medium text-lg animate-pulse">
               Loading your applications...
             </p>
           </div>
         ) : totalApps === 0 ? (
-          <div className="bg-white p-6 rounded-lg shadow text-center text-gray-500">
+          <div className="bg-white p-8 rounded-[24px] shadow-[0_4px_20px_rgba(49,46,129,0.04)] text-center text-[#464554] text-lg">
             No applications submitted yet.
           </div>
         ) : (
@@ -321,16 +321,18 @@ export default function MyApplications() {
             </div>
 
             {/* Reusable Table Component */}
-            <Table
-              data={applications}
-              columns={columns}
-              searchPlaceholder="Search applications..."
-              defaultItemsPerPage={10}
-            />
+            <div className="bg-white rounded-[24px] shadow-[0_4px_20px_rgba(49,46,129,0.04)] p-6 lg:p-8">
+              <Table
+                data={applications}
+                columns={columns}
+                searchPlaceholder="Search applications..."
+                defaultItemsPerPage={10}
+              />
+            </div>
             {applications.some((app) => app.stage === "completed") && (
-              <div className="w-auto justify-center">
-                <div className="shadow-2xl p-8 mt-2 text-center flex flex-col items-center justify-center rounded-2xl">
-                  <p className="font-semibold text-2xl text-gray-400 p-4">
+              <div className="w-auto flex justify-center mt-12">
+                <div className="bg-white shadow-[0_4px_20px_rgba(49,46,129,0.04)] p-8 text-center flex flex-col items-center justify-center rounded-[24px]">
+                  <p className="font-semibold text-xl text-[#464554] mb-4">
                     Please let us know how you find our service
                   </p>
                   <DialogBox onSubmit={sendFeedback} />
@@ -341,9 +343,9 @@ export default function MyApplications() {
         )}
       </main>
       {isUploadModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 bg-opacity-40 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-96">
-            <h2 className="text-xl font-semibold mb-4 text-indigo-900">
+        <div className="fixed inset-0 flex items-center justify-center bg-[#191c1e]/20 backdrop-blur-md z-50 transition-opacity">
+          <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(49,46,129,0.12)] p-8 w-[400px] border border-[#ffffff]">
+            <h2 className="text-xl font-bold text-[#191c1e] tracking-tight mb-6">
               Upload New Document
             </h2>
 
@@ -351,19 +353,19 @@ export default function MyApplications() {
               type="file"
               accept=".pdf,.jpg,.png"
               onChange={handleFileChange}
-              className="block w-full border border-gray-300 rounded-md p-2 mb-4"
+              className="block w-full border-2 border-dashed border-[#c7c4d7] rounded-xl p-4 mb-8 text-[#464554] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#e3dfff] file:text-[#2a14b4] hover:file:bg-[#c3c0ff] cursor-pointer"
             />
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-4">
               <button
                 onClick={closeUploadModal}
-                className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                className="px-5 py-2.5 bg-transparent text-[#464554] font-semibold rounded-xl hover:bg-[#f2f4f6]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpload}
-                className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                className="px-6 py-2.5 bg-gradient-to-br from-[#2a14b4] to-[#4338ca] text-white font-semibold rounded-xl hover:shadow-[0_4px_12px_rgba(67,56,202,0.4)] hover:-translate-y-0.5 transition-all"
               >
                 Upload
               </button>
