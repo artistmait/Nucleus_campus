@@ -1,8 +1,7 @@
 import axios from "axios";
-import pool from "../config/dbConfig.js";
+import prisma from "../config/prismaClient.js";
 
 export const feedback_predict = async (req, res) => {
-  const client = await pool.connect();
   try {
     const { feedbackText, user_id, q1, q2, q3, text } = req.body;
 
@@ -48,7 +47,6 @@ export const feedback_predict = async (req, res) => {
     });
 
     const rawSentiment = flaskResponse.data.prediction;
-    // console.log("sentiment ->" ,typeof(rawSentiment))
 
     const SENTIMENT = {
       POSITIVE: 1,
@@ -87,26 +85,24 @@ export const feedback_predict = async (req, res) => {
 
     const sentimentText = SENTIMENT_LABEL[sentimentInt];
 
-    //db insert
-    const feedback_insert = await client.query(
-      `INSERT INTO feedback (user_id, feedback, q1, q2, q3, other_text, sentiment, sentiment_text)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [
+    // DB insert using Prisma
+    const feedbackRecord = await prisma.feedback.create({
+      data: {
         user_id,
-        combined,
-        normalizedQ1,
-        normalizedQ2,
-        normalizedQ3,
-        normalizedOther,
-        sentimentInt,
-        sentimentText,
-      ]
-    );
+        feedback: combined,
+        q1: normalizedQ1,
+        q2: normalizedQ2,
+        q3: normalizedQ3,
+        other_text: normalizedOther,
+        sentiment: sentimentInt,
+        sentiment_text: sentimentText,
+      },
+    });
 
     // Send response back to frontend
     return res.status(200).json({
       success: true,
-      feedback : feedback_insert.rows[0],
+      feedback: feedbackRecord,
       message: "Feedback processed successfully",
     });
   } catch (err) {
@@ -120,22 +116,28 @@ export const feedback_predict = async (req, res) => {
 
 export const getFeedbackAnalytics = async (req, res) => {
   try {
-    const sentimentDistribution = await pool.query(`
-      SELECT sentiment_text, COUNT(*) AS count
-      FROM feedback
-      GROUP BY sentiment_text
-    `);
+    const sentimentDistribution = await prisma.feedback.groupBy({
+      by: ['sentiment_text'],
+      _count: { id: true },
+    });
 
-    const feedbackTrend = await pool.query(`
-      SELECT DATE(created_at) AS date, COUNT(*) AS total
+    // Format to match original shape: { sentiment_text, count }
+    const formattedSentiment = sentimentDistribution.map((row) => ({
+      sentiment_text: row.sentiment_text,
+      count: row._count.id,
+    }));
+
+    // Feedback trend by date — use raw query for DATE() aggregate
+    const feedbackTrend = await prisma.$queryRaw`
+      SELECT DATE(created_at) AS date, COUNT(*)::int AS total
       FROM feedback
       GROUP BY DATE(created_at)
       ORDER BY date
-    `);
+    `;
 
     res.json({
-      sentimentDistribution: sentimentDistribution.rows,
-      feedbackTrend: feedbackTrend.rows,
+      sentimentDistribution: formattedSentiment,
+      feedbackTrend,
     });
   } catch (err) {
     console.error("Feedback analytics error:", err);

@@ -1,4 +1,4 @@
-import pool from '../config/dbConfig.js';
+import prisma from '../config/prismaClient.js';
 
 class NotificationService {
     constructor() {
@@ -39,11 +39,13 @@ class NotificationService {
     async sendNotification(userId, message, type = 'info') {
         try {
             // 1. Save to DB
-            const result = await pool.query(
-                `INSERT INTO notifications (user_id, message, type) VALUES ($1, $2, $3) RETURNING *`,
-                [userId, message, type]
-            );
-            const notification = result.rows[0];
+            const notification = await prisma.notification.create({
+                data: {
+                    user_id: userId,
+                    message,
+                    type,
+                },
+            });
 
             // 2. Broadcast via SSE if online
             if (this.clients.has(userId)) {
@@ -62,11 +64,12 @@ class NotificationService {
     async getNotifications(userId) {
          try {
              // fetch last 50
-             const result = await pool.query(
-                 `SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
-                 [userId]
-             );
-             return result.rows;
+             const notifications = await prisma.notification.findMany({
+                 where: { user_id: userId },
+                 orderBy: { created_at: 'desc' },
+                 take: 50,
+             });
+             return notifications;
          } catch(e) {
              throw e;
          }

@@ -1,4 +1,4 @@
-import pool from '../config/dbConfig.js';
+import prisma from '../config/prismaClient.js';
 import notificationService from './notificationService.js';
 
 const CHECK_INTERVAL_MS = 60 * 1000;
@@ -9,25 +9,29 @@ export const startSlaAgent = () => {
 
     setInterval(async () => {
         try {
-            // ✅ Fix: added 'a' alias, also notify student
-            const query = `
-                SELECT a.*, u.username AS student_name
-                FROM applications a
-                JOIN users u ON a.student_id = u.id
-                WHERE a.status = 'pending'
-                AND a.priority != 'critical'
-                AND a.created_at < NOW() - INTERVAL '${SLA_THRESHOLD_MINUTES} minutes'
-            `;
-            const result = await pool.query(query);
+            const thresholdDate = new Date(Date.now() - SLA_THRESHOLD_MINUTES * 60 * 1000);
 
-            for (const app of result.rows) {
+            const breachedApps = await prisma.application.findMany({
+                where: {
+                    status: 'pending',
+                    priority: { not: 'critical' },
+                    created_at: { lt: thresholdDate },
+                },
+                include: {
+                    student: {
+                        select: { username: true },
+                    },
+                },
+            });
+
+            for (const app of breachedApps) {
                 let isCriticalByAI = true;
 
                 if (isCriticalByAI) {
-                    await pool.query(
-                        'UPDATE applications SET priority = $1 WHERE application_id = $2',
-                        ['critical', app.application_id]
-                    );
+                    await prisma.application.update({
+                        where: { id: app.id },
+                        data: { priority: 'critical' },
+                    });
                     console.log(`[SLA Agent] Escalated Application ${app.application_id} to CRITICAL.`);
 
                     const appLabel = (app.type || "Application")
@@ -38,12 +42,12 @@ export const startSlaAgent = () => {
                     if (app.incharge_id) {
                         await notificationService.sendNotification(
                             app.incharge_id,
-                            `SLA Alert: ${app.student_name}'s ${appLabel} (#${app.application_id}) breached SLA. Auto-escalated to CRITICAL.`,
+                            `SLA Alert: ${app.student?.username}'s ${appLabel} (#${app.application_id}) breached SLA. Auto-escalated to CRITICAL.`,
                             'critical'
                         );
                     }
 
-                    // ✅ Also notify the student
+                    // Also notify the student
                     if (app.student_id) {
                         await notificationService.sendNotification(
                             app.student_id,

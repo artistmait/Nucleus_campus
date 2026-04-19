@@ -1,4 +1,4 @@
-import pool from "../config/dbConfig.js";
+import prisma from "../config/prismaClient.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 import fs from "fs";
 import { transporter } from "../config/email.js";
@@ -14,7 +14,6 @@ export const STATUS_MESSAGES = {
 
 
 export const submitApplication = async (req, res) => {
-  const client = await pool.connect();
   try {
     const { student_id, type, department_id } = req.body;
 
@@ -33,98 +32,89 @@ export const submitApplication = async (req, res) => {
 
     fs.unlinkSync(req.file.path);
 
-    await client.query("BEGIN");
+    // Use Prisma interactive transaction
+    const application = await prisma.$transaction(async (tx) => {
+      // Check user role
+      const userRecord = await tx.user.findUnique({
+        where: { id: parseInt(student_id) },
+        select: { role_id: true },
+      });
 
-    const roleResult = await client.query(
-      "SELECT role_id FROM users WHERE id = $1",
-      [student_id],
-    );
+      if (!userRecord) {
+        throw new Error("USER_NOT_FOUND");
+      }
 
-    if (roleResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
+      const role_id = userRecord.role_id;
+      // If role_id is 4 (Alumni) - set priority high
+      const priority = role_id === 4 ? "high" : "normal";
 
-    const role_id = roleResult.rows[0].role_id;
+      // Insert into documents table
+      const newDocument = await tx.document.create({
+        data: {
+          student_id: parseInt(student_id),
+          document_type: type,
+          cloudinary_url: uploadResult.secure_url,
+        },
+      });
 
-    // If role_id is 4 (Alumni) - set priority high
-    const priority = role_id === 4 ? "high" : "normal";
+      // Assign random incharge
+      const incharges = await tx.user.findMany({
+        where: { role_id: 2 },
+        select: { id: true },
+      });
 
-    // Insert into documents table
-    const documentInsert = await client.query(
-      `INSERT INTO documents (student_id, document_type, cloudinary_url)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [student_id, type, uploadResult.secure_url],
-    );
+      if (incharges.length === 0) {
+        throw new Error("NO_INCHARGE");
+      }
 
-    const document_id = documentInsert.rows[0].id;
+      const incharge_id = incharges[Math.floor(Math.random() * incharges.length)].id;
 
-    //Assign random incharge
-    const incharge = await client.query(
-      "SELECT id FROM users WHERE role_id = 2 ORDER BY RANDOM() LIMIT 1",
-    );
+      // Generate application sequence ID
+      const seqResult = await tx.$queryRaw`SELECT nextval('application_seq') AS seq`;
+      const seq = seqResult[0].seq;
+      const newapp_id = `APN-${String(seq).padStart(4, "0")}`;
 
-    if (incharge.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.json({ success: false, message: "No incharge available" });
-    }
+      // Deadline: 7 days from now
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + 7);
 
-    const incharge_id = incharge.rows[0].id;
+      // Insert application
+      const newApp = await tx.application.create({
+        data: {
+          student_id: parseInt(student_id),
+          incharge_id,
+          document_id: newDocument.id,
+          type,
+          status: "pending",
+          stage: "submitted",
+          priority,
+          deadline,
+          department_id: parseInt(department_id),
+          application_id: newapp_id,
+        },
+      });
 
-    //Insert into applications table
-    const deadline = new Date();
-    deadline.setDate(deadline.getDate() + 7); // 7-day deadline
+      return newApp;
+    });
 
-    const seqResult = await client.query(
-      "SELECT nextval('application_seq') AS seq",
-    );
-    const seq = seqResult.rows[0].seq;
-    const newapp_id = `APN-${String(seq).padStart(4, "0")}`;
+    // Get email from backend (outside transaction)
+    const studentUser = await prisma.user.findUnique({
+      where: { id: parseInt(student_id) },
+      select: { user_email: true, moodle_id: true },
+    });
 
-    const newApp = await client.query(
-      `INSERT INTO applications (student_id, incharge_id, document_id, type, status, stage, priority, deadline, department_id, application_id)
-       VALUES ($1, $2, $3, $4, 'pending', 'submitted', $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        student_id,
-        incharge_id,
-        document_id,
-        type,
-        priority,
-        deadline,
-        department_id,
-        newapp_id,
-      ],
-    );
-
-    await client.query("COMMIT");
-
-    //get email from backend
-    const studentResult = await pool.query(
-      `SELECT user_email, moodle_id 
-   FROM users 
-   WHERE id = $1`,
-      [student_id],
-    );
-
-    if (studentResult.rows.length === 0) {
+    if (!studentUser) {
       throw new Error("Student not found");
     }
 
-    //send email notif on submit
-    const { user_email, moodle_id } = studentResult.rows[0];
-    const application = newApp.rows[0];
-
+    // Send email notif on submit
     await transporter.sendMail({
       from: `"Application Portal" <${process.env.EMAIL_USER}>`,
-      to: user_email,
+      to: studentUser.user_email,
       subject: "Application Submitted Successfully",
       html: `
     <h2>Application Submitted Successfully</h2>
-    <p><b>Moodle ID:</b> ${moodle_id}</p>
+    <p><b>Moodle ID:</b> ${studentUser.moodle_id}</p>
     <p><b>Application ID:</b> ${application.application_id}</p>
     <p><b>Application Type:</b> ${application.type}</p>
     <p><b>Status:</b> ${application.status}</p>
@@ -140,14 +130,17 @@ export const submitApplication = async (req, res) => {
     res.json({
       success: true,
       message: "Application submitted successfully",
-      application: newApp.rows[0],
+      application,
     });
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (error.message === "USER_NOT_FOUND") {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    if (error.message === "NO_INCHARGE") {
+      return res.json({ success: false, message: "No incharge available" });
+    }
     console.error("Submit Application Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
-  } finally {
-    client.release();
   }
 };
 
@@ -156,30 +149,37 @@ export const getMyApplications = async (req, res) => {
   const { student_id } = req.params;
 
   try {
-    const result = await pool.query(
-      `SELECT 
-         a.application_id AS application_id,
-         a.type,
-         a.status,
-         COALESCE(a.stage, 'submitted') AS stage,
-         a.priority,
-         a.deadline,
-         a.created_at,
-         a.incharge_id,
-         a.app_notes,
-         d.cloudinary_url,
-         d.document_type
-       FROM applications a
-       LEFT JOIN users u ON a.incharge_id = u.id
-       LEFT JOIN documents d ON a.document_id = d.id
-       WHERE a.student_id = $1
-       ORDER BY a.created_at DESC`,
-      [student_id],
-    );
+    const applications = await prisma.application.findMany({
+      where: { student_id: parseInt(student_id) },
+      include: {
+        document: {
+          select: {
+            cloudinary_url: true,
+            document_type: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    // Flatten to match the original response shape
+    const formattedApps = applications.map((app) => ({
+      application_id: app.application_id,
+      type: app.type,
+      status: app.status,
+      stage: app.stage || 'submitted',
+      priority: app.priority,
+      deadline: app.deadline,
+      created_at: app.created_at,
+      incharge_id: app.incharge_id,
+      app_notes: app.app_notes,
+      cloudinary_url: app.document?.cloudinary_url || null,
+      document_type: app.document?.document_type || null,
+    }));
 
     res.status(200).json({
       success: true,
-      applications: result.rows,
+      applications: formattedApps,
     });
   } catch (error) {
     console.error("Error fetching applications:", error);
@@ -192,8 +192,6 @@ export const getMyApplications = async (req, res) => {
 
 //update documents
 export const updateMyApplicationDocument = async (req, res) => {
-  const client = await pool.connect();
-
   try {
     const { application_id } = req.params;
 
@@ -212,28 +210,39 @@ export const updateMyApplicationDocument = async (req, res) => {
 
     fs.unlinkSync(req.file.path);
 
-    await client.query("BEGIN");
+    // Use Prisma interactive transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Find the existing application with its document
+      const existingApp = await tx.application.findFirst({
+        where: { application_id },
+        include: {
+          document: {
+            select: { document_type: true },
+          },
+        },
+      });
 
-    // Create new document entry
-    const documentInsert = await client.query(
-      `INSERT INTO documents (student_id, document_type, cloudinary_url)
-   SELECT a.student_id, d.document_type, $1
-   FROM applications a
-   JOIN documents d ON a.document_id = d.id
-   WHERE a.application_id = $2
-   RETURNING *`,
-      [uploadResult.secure_url, application_id],
-    );
+      if (!existingApp) {
+        throw new Error("APP_NOT_FOUND");
+      }
 
-    const newDocumentId = documentInsert.rows[0].id;
+      // Create new document entry
+      const newDoc = await tx.document.create({
+        data: {
+          student_id: existingApp.student_id,
+          document_type: existingApp.document?.document_type || 'unknown',
+          cloudinary_url: uploadResult.secure_url,
+        },
+      });
 
-    // Update the application with the new document id
-    await client.query(
-      `UPDATE applications SET document_id = $1 WHERE application_id = $2`,
-      [newDocumentId, application_id],
-    );
+      // Update the application with the new document id
+      await tx.application.update({
+        where: { id: existingApp.id },
+        data: { document_id: newDoc.id },
+      });
 
-    await client.query("COMMIT");
+      return newDoc;
+    });
 
     res.json({
       success: true,
@@ -241,38 +250,12 @@ export const updateMyApplicationDocument = async (req, res) => {
       newUrl: uploadResult.secure_url,
     });
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (error.message === "APP_NOT_FOUND") {
+      return res.status(404).json({ success: false, message: "Application not found" });
+    }
     console.error("Error updating document:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to update document" });
-  } finally {
-    client.release();
   }
 };
-
-// export const notifyStudent = async (applicationId, newStatus, reason = null) => {
-//     const result = await pool.query(`
-//         SELECT a.*, u.name, u.id AS student_user_id
-//         FROM applications a
-//         JOIN users u ON a.user_id = u.id
-//         WHERE a.id = $1
-//     `, [applicationId]);
-
-//     const app = result.rows[0];
-//     if (!app) return;
-
-//     const appLabel = app.application_type
-//         .replace(/_/g, ' ')
-//         .replace(/\b\w/g, c => c.toUpperCase());
-
-//     const msgFn = STATUS_MESSAGES[newStatus];
-//     if (!msgFn) return;
-
-//     const type = ['rejected', 'critical'].includes(newStatus) ? 'critical' : 'info';
-//     await notificationService.sendNotification(
-//         app.student_user_id,
-//         msgFn(appLabel, reason),
-//         type
-//     );
-// };

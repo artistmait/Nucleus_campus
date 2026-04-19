@@ -1,39 +1,55 @@
-import pool from "../config/dbConfig.js";
+import prisma from "../config/prismaClient.js";
 import notificationService from "../services/notificationService.js";
 
 export const getDepartmentApplications = async (req, res) => {
   const { department_id } = req.params; // coming from route param
 
   try {
-    const query = `
-      SELECT 
-        a.application_id,
-        a.type,
-        a.status,
-        a.priority,
-        a.deadline,
-        a.created_at,
-        a.student_id,
-        u.moodle_id,
-        u.username,
-        doc.document_type,
-        doc.cloudinary_url,
-        inc.id AS incharge_id,
-        inc.username AS incharge_name
-      FROM applications a
-      LEFT JOIN users u ON a.student_id = u.id
-      LEFT JOIN department d ON a.department_id = d.id
-      LEFT JOIN users inc ON a.incharge_id = inc.id
-      LEFT JOIN documents doc ON a.document_id = doc.id
-      WHERE a.department_id = $1
-      ORDER BY a.created_at DESC;
-    `;
+    const applications = await prisma.application.findMany({
+      where: { department_id: parseInt(department_id) },
+      include: {
+        student: {
+          select: {
+            moodle_id: true,
+            username: true,
+          },
+        },
+        document: {
+          select: {
+            document_type: true,
+            cloudinary_url: true,
+          },
+        },
+        incharge: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
 
-    const result = await pool.query(query, [department_id]);
+    // Flatten to match the original response shape
+    const formattedApps = applications.map((app) => ({
+      application_id: app.application_id,
+      type: app.type,
+      status: app.status,
+      priority: app.priority,
+      deadline: app.deadline,
+      created_at: app.created_at,
+      student_id: app.student_id,
+      moodle_id: app.student?.moodle_id || null,
+      username: app.student?.username || null,
+      document_type: app.document?.document_type || null,
+      cloudinary_url: app.document?.cloudinary_url || null,
+      incharge_id: app.incharge?.id || null,
+      incharge_name: app.incharge?.username || null,
+    }));
 
     res.json({
       success: true,
-      applications: result.rows,
+      applications: formattedApps,
     });
   } catch (error) {
     console.error("Error fetching department applications:", error);
@@ -48,35 +64,51 @@ export const getHADashboard = async (req, res) => {
   const { incharge_id } = req.params;
 
   try {
-    const studentsByBranch = await pool.query(`
-  SELECT
-    d.dept_name AS branch,
-    COUNT(u.id) AS total_students
-  FROM users u
-  JOIN department d ON u.department_id = d.id
-  JOIN roles r ON u.role_id = r.id
-  WHERE r.role_name = 'student'
-  GROUP BY d.dept_name
-  ORDER BY d.dept_name
-`);
+    // Students by branch
+    const studentsByBranchRaw = await prisma.user.groupBy({
+      by: ['department_id'],
+      where: {
+        role: { role_name: 'student' },
+        department_id: { not: null },
+      },
+      _count: { id: true },
+    });
 
-    const applicationsByBranch = await pool.query(
-      `
-  SELECT
-    d.dept_name AS branch,
-    COUNT(a.id) AS total_applications
-  FROM applications a
-  JOIN users u ON a.student_id = u.id
-  JOIN department d ON u.department_id = d.id
-  WHERE a.incharge_id = $1
-  GROUP BY d.dept_name
-  `,
-      [incharge_id],
-    );
+    const deptIds = studentsByBranchRaw.map((r) => r.department_id).filter(Boolean);
+    const departments = await prisma.department.findMany({
+      where: { id: { in: deptIds } },
+    });
+    const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.dept_name]));
+
+    const studentsByBranch = studentsByBranchRaw.map((r) => ({
+      branch: deptMap[r.department_id] || 'Unknown',
+      total_students: r._count.id,
+    }));
+
+    // Applications by branch for this incharge
+    const applicationsByBranchRaw = await prisma.application.groupBy({
+      by: ['department_id'],
+      where: {
+        incharge_id: parseInt(incharge_id),
+        department_id: { not: null },
+      },
+      _count: { id: true },
+    });
+
+    const appDeptIds = applicationsByBranchRaw.map((r) => r.department_id).filter(Boolean);
+    const appDepts = await prisma.department.findMany({
+      where: { id: { in: appDeptIds } },
+    });
+    const appDeptMap = Object.fromEntries(appDepts.map((d) => [d.id, d.dept_name]));
+
+    const applicationsByBranch = applicationsByBranchRaw.map((r) => ({
+      branch: appDeptMap[r.department_id] || 'Unknown',
+      total_applications: r._count.id,
+    }));
 
     res.json({
-      studentsByBranch: studentsByBranch.rows,
-      applicationsByBranch: applicationsByBranch.rows,
+      studentsByBranch,
+      applicationsByBranch,
     });
   } catch (error) {
     console.error("Dashboard error:", error);
@@ -86,48 +118,40 @@ export const getHADashboard = async (req, res) => {
 
 export const gethaDashboard = async (req, res) => {
   const { department_id } = req.params;
+  const deptId = parseInt(department_id);
 
   try {
-    const studentsCount = await pool.query(
-      `
-      SELECT COUNT(u.id) AS total_students
-      FROM users u
-      JOIN roles r ON u.role_id = r.id
-      WHERE u.department_id = $1
-      AND r.role_name = 'student'
-      `,
-      [department_id],
-    );
+    const totalStudents = await prisma.user.count({
+      where: {
+        department_id: deptId,
+        role: { role_name: 'student' },
+      },
+    });
 
-    const applicationsCount = await pool.query(
-      `
-      SELECT COUNT(a.id) AS total_applications
-      FROM applications a
-      JOIN users u ON a.student_id = u.id
-      WHERE u.department_id = $1
-      `,
-      [department_id],
-    );
+    const totalApplications = await prisma.application.count({
+      where: {
+        student: { department_id: deptId },
+      },
+    });
 
-    const sentimentData = await pool.query(
-      `
+    // Sentiment distribution — use raw query since feedback doesn't have a direct
+    // application relation in the introspected schema
+    const sentimentData = await prisma.$queryRaw`
       SELECT 
         f.sentiment,
-        COUNT(f.id) AS count
+        COUNT(f.id)::int AS count
       FROM feedback f
       JOIN applications a ON f.application_id = a.id
       JOIN users u ON a.student_id = u.id
-      WHERE u.department_id = $1
+      WHERE u.department_id = ${deptId}
       GROUP BY f.sentiment
-      `,
-      [department_id],
-    );
+    `;
 
     res.json({
       success: true,
-      totalStudents: studentsCount.rows[0].total_students,
-      totalApplications: applicationsCount.rows[0].total_applications,
-      sentimentDistribution: sentimentData.rows,
+      totalStudents,
+      totalApplications,
+      sentimentDistribution: sentimentData,
     });
   } catch (error) {
     console.error("HA Dashboard error:", error);
@@ -145,64 +169,81 @@ export const updateApplicationPriority = async (req, res) => {
   try {
     const validPriorities = ["low", "high", "critical"];
 
-    if (!validPriorities.includes(priority.toLowerCase())) {
+    const normalizedPriority = (priority || "").toLowerCase();
+
+    if (!validPriorities.includes(normalizedPriority)) {
       return res.status(400).json({
         success: false,
         message: "Invalid priority value",
       });
     }
 
-    const result = await pool.query(
-      `UPDATE applications
-   SET priority = $1
-   WHERE application_id = $2
-   RETURNING *`,
-      [priority.toLowerCase(), application_id],
-    );
+    // Find the application first
+    const existingApp = await prisma.application.findFirst({
+      where: { application_id },
+    });
 
-    if (result.rowCount === 0) {
+    if (!existingApp) {
       return res.status(404).json({
         success: false,
         message: "Application not found",
       });
     }
 
-    if (priority.toLowerCase() === "critical") {
-      // Get student name and app type for the message
-      const detailsResult = await pool.query(
-        `SELECT 
-           a.application_id,
-           a.type AS application_type,
-           a.incharge_id,
-           a.student_id,
-           u.username AS student_name
-         FROM applications a
-         JOIN users u ON a.student_id = u.id
-         WHERE a.application_id = $1`,
-        [application_id],
-      );
+    await prisma.application.update({
+      where: { id: existingApp.id },
+      data: { priority: normalizedPriority },
+    });
 
-      if (detailsResult.rowCount > 0) {
-        const d = detailsResult.rows[0];
-        const appLabel = d.application_type
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase());
+    // Get student name and app type for the message
+    const appDetails = await prisma.application.findFirst({
+      where: { application_id },
+      include: {
+        student: {
+          select: { username: true },
+        },
+      },
+    });
 
-        // ✅ Fix: notify incharge if exists
-        if (d.incharge_id) {
+    if (appDetails) {
+      const appLabel = (appDetails.type || "Application")
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const priorityMessages = {
+        critical: {
+          incharge: `${appDetails.student?.username}'s ${appLabel} application (#${application_id}) was manually escalated to CRITICAL by the HOD.`,
+          student: `Your ${appLabel} application (#${application_id}) has been marked as CRITICAL priority by the HOD.`,
+          type: "critical",
+        },
+        high: {
+          incharge: `${appDetails.student?.username}'s ${appLabel} application (#${application_id}) has been escalated to HIGH priority by higher authorities.`,
+          student: `Your application #${application_id} has been escalated to HIGH priority by higher authorities.`,
+          type: "info",
+        },
+        low: {
+          incharge: `${appDetails.student?.username}'s ${appLabel} application (#${application_id}) has been de-escalated to low priority by higher authorities.`,
+          student: `Your application #${application_id} has been de-escalated to low priority by higher authorities.`,
+          type: "info",
+        },
+      };
+
+      const messages = priorityMessages[normalizedPriority];
+
+      if (messages) {
+        if (appDetails.incharge_id) {
           await notificationService.sendNotification(
-            d.incharge_id,
-            `${d.student_name}'s ${appLabel} application (#${application_id}) was manually escalated to CRITICAL by the HOD.`,
-            "critical",
+            appDetails.incharge_id,
+            messages.incharge,
+            messages.type,
           );
         }
 
-        // ✅ New: also notify the student
-        if (d.student_id) {
+        if (appDetails.student_id) {
           await notificationService.sendNotification(
-            d.student_id,
-            `Your ${appLabel} application (#${application_id}) has been marked as CRITICAL priority by the HOD.`,
-            "critical",
+            appDetails.student_id,
+            messages.student,
+            messages.type,
           );
         }
       }

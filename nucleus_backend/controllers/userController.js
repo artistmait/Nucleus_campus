@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 // import validator from 'validator';
-import pool from "../config/dbConfig.js";
+import prisma from "../config/prismaClient.js";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 dotenv.config();
@@ -19,16 +19,13 @@ export const loginUser = async (req, res) => {
   try {
     const { user_email, password } = req.body;
     // Find user by email
-    const result = await pool.query(
-      "SELECT * FROM users WHERE user_email = $1",
-      [user_email],
-    );
-    console.log("result ->", result);
-    if (result.rows.length === 0) {
+    const user = await prisma.user.findUnique({
+      where: { user_email },
+    });
+
+    if (!user) {
       return res.json({ success: false, message: "User does not exist" });
     }
-
-    const user = result.rows[0];
 
     // Compare hashed password
     const isMatch = await bcrypt.compare(password, user.password);
@@ -66,13 +63,12 @@ export const signupUser = async (req, res) => {
       role_id,
       department_id,
     } = req.body;
-    // console.log(moodle_id)
-    const exists = await pool.query(
-      "SELECT * FROM users WHERE user_email = $1",
-      [user_email],
-    );
-    // console.log(exists)
-    if (exists.rows.length > 0) {
+
+    const exists = await prisma.user.findUnique({
+      where: { user_email },
+    });
+
+    if (exists) {
       return res.json({ success: false, message: "User already exists" });
     }
 
@@ -88,25 +84,24 @@ export const signupUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const now = new Date();
-    const newUser = await pool.query(
-      "INSERT INTO users (moodle_id,user_email,username,password,role_id,department_id,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING * ",
-      [
+    const newUser = await prisma.user.create({
+      data: {
         moodle_id,
         user_email,
         username,
-        hashedPassword,
+        password: hashedPassword,
         role_id,
         department_id,
-        now,
-      ],
-    );
-    // res.json(newUser.rows[0])
-    const token = createToken(newUser.rows[0].id);
+        created_at: now,
+      },
+    });
+
+    const token = createToken(newUser.id);
     return res.json({
       success: true,
       message: "Registration Successful",
       token,
-      user: newUser.rows[0],
+      user: newUser,
     });
   } catch (err) {
     console.error("Signup error:", err);
@@ -150,20 +145,23 @@ export const googleLogin = async (req, res) => {
     }
     console.log("3. Domain check PASSED");
 
-    const result = await pool.query(
-      `SELECT u.*, r.role_name
-       FROM users u
-       LEFT JOIN roles r ON u.role_id = r.id
-       WHERE LOWER(u.user_email) = $1`,
-      [email],
-    );
-    console.log("4. DB rows found:", result.rows.length);
+    const user = await prisma.user.findFirst({
+      where: {
+        user_email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        role: true,
+      },
+    });
+    console.log("4. DB user found:", !!user);
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.json({ success: false, message: "No account found. Please register first." });
     }
 
-    const user = result.rows[0];
     const token = createToken(user.id);
     return res.json({
       success: true,
@@ -174,7 +172,7 @@ export const googleLogin = async (req, res) => {
         moodle_id: user.moodle_id,
         user_email: user.user_email,
         role_id: user.role_id,
-        role_name: user.role_name,
+        role_name: user.role?.role_name,
         department_id: user.department_id,
       },
     });

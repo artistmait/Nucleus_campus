@@ -1,5 +1,5 @@
 import notificationService from '../services/notificationService.js';
-import pool from '../config/dbConfig.js';
+import prisma from '../config/prismaClient.js';
 
 export const getNotifications = async (req, res) => {
     try {
@@ -16,10 +16,10 @@ export const markAsRead = async (req, res) => {
     try {
         const { ids } = req.body;
         if (ids && ids.length > 0) {
-            await pool.query(
-                'UPDATE notifications SET read = true WHERE id = ANY($1)',
-                [ids]
-            );
+            await prisma.notification.updateMany({
+                where: { id: { in: ids } },
+                data: { read: true },
+            });
         }
         res.status(200).json({ success: true });
     } catch (e) {

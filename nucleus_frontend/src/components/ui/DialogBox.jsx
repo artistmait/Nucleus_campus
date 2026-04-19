@@ -25,7 +25,7 @@ export const DialogBox = ({ onSubmit }) => {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <button className="px-4 py-2 h-10 bg-black text-white rounded-full w-1/6">
+        <button className="inline-flex items-center justify-center h-10 px-5 bg-black text-white rounded-full whitespace-nowrap">
           Feedback
         </button>
       </Dialog.Trigger>

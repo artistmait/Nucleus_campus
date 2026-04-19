@@ -1,4 +1,4 @@
-import pool from "../config/dbConfig.js";
+import prisma from "../config/prismaClient.js";
 import { transporter } from "../config/email.js";
 import notificationService from "../services/notificationService.js";
 import { STATUS_MESSAGES } from "./applicationController.js";
@@ -8,32 +8,47 @@ export const getInchargeApplications = async (req, res) => {
   const { incharge_id } = req.params;
 
   try {
-    const result = await pool.query(
-      `SELECT 
-         a.application_id,
-         a.type,
-         a.status,
-         COALESCE(a.stage, 'submitted') AS stage,
-         a.priority,
-         a.deadline,
-         a.created_at,
-         a.student_id,
-         a.app_notes,
-         u.username AS student_name,
-         u.moodle_id,
-         d.document_type,
-         d.cloudinary_url,
-         dept.dept_name AS branch
-       FROM applications a
-       LEFT JOIN users u ON a.student_id = u.id
-       LEFT JOIN documents d ON a.document_id = d.id
-       LEFT JOIN department dept ON u.department_id = dept.id
-       WHERE a.incharge_id = $1
-       ORDER BY a.created_at DESC`,
-      [incharge_id],
-    );
+    const applications = await prisma.application.findMany({
+      where: { incharge_id: parseInt(incharge_id) },
+      include: {
+        student: {
+          select: {
+            username: true,
+            moodle_id: true,
+            department: {
+              select: { dept_name: true },
+            },
+          },
+        },
+        document: {
+          select: {
+            document_type: true,
+            cloudinary_url: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
 
-    res.json({ success: true, applications: result.rows });
+    // Flatten to match the original response shape
+    const formattedApps = applications.map((app) => ({
+      application_id: app.application_id,
+      type: app.type,
+      status: app.status,
+      stage: app.stage || 'submitted',
+      priority: app.priority,
+      deadline: app.deadline,
+      created_at: app.created_at,
+      student_id: app.student_id,
+      app_notes: app.app_notes,
+      student_name: app.student?.username || null,
+      moodle_id: app.student?.moodle_id || null,
+      document_type: app.document?.document_type || null,
+      cloudinary_url: app.document?.cloudinary_url || null,
+      branch: app.student?.department?.dept_name || null,
+    }));
+
+    res.json({ success: true, applications: formattedApps });
   } catch (error) {
     console.error("Error fetching incharge applications:", error);
     res.status(500).json({
@@ -49,14 +64,11 @@ export const updateApplicationStatus = async (req, res) => {
   const { status, priority, markCompleted } = req.body;
 
   try {
+    const updateData = {};
     let stage = null;
-    const updateFields = [];
-    const values = [];
-    let index = 1;
 
     if (status) {
-      updateFields.push(`status = $${index++}`);
-      values.push(status);
+      updateData.status = status;
 
       if (status === "approved") {
         stage = "reviewed";
@@ -70,67 +82,79 @@ export const updateApplicationStatus = async (req, res) => {
       stage = "completed";
     }
     if (stage) {
-      updateFields.push(`stage = $${index++}`);
-      values.push(stage);
+      updateData.stage = stage;
     }
 
     if (priority) {
-      updateFields.push(`priority = $${index++}`);
-      values.push(priority);
+      updateData.priority = priority;
     }
-    //update stage based on status
 
-    if (updateFields.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return res
         .status(400)
         .json({ success: false, message: "No fields to update" });
     }
 
-    values.push(application_id);
+    // Find the application first to ensure it exists
+    const existingApp = await prisma.application.findFirst({
+      where: { application_id },
+    });
 
-    const query = `
-      UPDATE applications
-      SET ${updateFields.join(", ")}
-      WHERE application_id = $${index}
-      RETURNING *;
-    `;
-
-    const result = await pool.query(query, values);
-
-    if (result.rowCount === 0) {
+    if (!existingApp) {
       return res
         .status(404)
         .json({ success: false, message: "Application not found" });
     }
 
-    const fullData = await pool.query(
-      `SELECT 
-         a.application_id,
-         a.type,
-         a.status,
-         a.stage,
-         a.priority,
-         a.deadline,
-         a.created_at,
-         a.student_id,
-         a.incharge_id,
-         a.department_id,
-         a.app_notes,
-         u.username AS student_name,
-         u.moodle_id,
-         u.user_email,
-         d.document_type,
-         d.cloudinary_url,
-         dept.dept_name AS branch
-       FROM applications a
-       LEFT JOIN users u ON a.student_id = u.id
-       LEFT JOIN documents d ON a.document_id = d.id
-       LEFT JOIN department dept ON u.department_id = dept.id
-       WHERE a.application_id = $1`,
-      [application_id],
-    );
+    // Update
+    await prisma.application.update({
+      where: { id: existingApp.id },
+      data: updateData,
+    });
 
-    const application = fullData.rows[0];
+    // Fetch full data with relations
+    const fullApp = await prisma.application.findFirst({
+      where: { application_id },
+      include: {
+        student: {
+          select: {
+            username: true,
+            moodle_id: true,
+            user_email: true,
+            department: {
+              select: { dept_name: true },
+            },
+          },
+        },
+        document: {
+          select: {
+            document_type: true,
+            cloudinary_url: true,
+          },
+        },
+      },
+    });
+
+    const application = {
+      application_id: fullApp.application_id,
+      type: fullApp.type,
+      status: fullApp.status,
+      stage: fullApp.stage,
+      priority: fullApp.priority,
+      deadline: fullApp.deadline,
+      created_at: fullApp.created_at,
+      student_id: fullApp.student_id,
+      incharge_id: fullApp.incharge_id,
+      department_id: fullApp.department_id,
+      app_notes: fullApp.app_notes,
+      student_name: fullApp.student?.username || null,
+      moodle_id: fullApp.student?.moodle_id || null,
+      user_email: fullApp.student?.user_email || null,
+      document_type: fullApp.document?.document_type || null,
+      cloudinary_url: fullApp.document?.cloudinary_url || null,
+      branch: fullApp.student?.department?.dept_name || null,
+    };
+
     const normalizedStatus =
       typeof status === "string" ? status.toLowerCase() : null;
     const appLabel = (application.type || "application")
@@ -155,11 +179,11 @@ export const updateApplicationStatus = async (req, res) => {
         let haIds = [];
 
         if (application.department_id) {
-          const haResult = await pool.query(
-            `SELECT id FROM users WHERE role_id = 3 AND department_id = $1`,
-            [application.department_id],
-          );
-          haIds = haResult.rows.map((row) => row.id);
+          const haUsers = await prisma.user.findMany({
+            where: { role_id: 3, department_id: application.department_id },
+            select: { id: true },
+          });
+          haIds = haUsers.map((row) => row.id);
         }
 
         if (shouldNotifyStatus) {
@@ -221,7 +245,7 @@ export const updateApplicationStatus = async (req, res) => {
     res.json({
       success: true,
       message: "Application updated successfully",
-      application: fullData.rows[0],
+      application,
     });
   } catch (error) {
     console.error("Error updating application:", error);
@@ -236,23 +260,25 @@ export const updateApplicationNotes = async (req, res) => {
   const { app_notes } = req.body;
 
   try {
-    const result = await pool.query(
-      `UPDATE applications 
-       SET app_notes = $1 
-       WHERE application_id = $2 
-       RETURNING *`,
-      [app_notes, application_id],
-    );
+    const existingApp = await prisma.application.findFirst({
+      where: { application_id },
+    });
 
-    if (result.rowCount === 0)
+    if (!existingApp) {
       return res
         .status(404)
         .json({ success: false, message: "Application not found" });
+    }
+
+    const updated = await prisma.application.update({
+      where: { id: existingApp.id },
+      data: { app_notes },
+    });
 
     res.json({
       success: true,
       message: "Notes updated",
-      app_notes: result.rows[0].app_notes,
+      app_notes: updated.app_notes,
     });
   } catch (error) {
     console.error("Error updating notes:", error);
@@ -266,35 +292,53 @@ export const getInchargeDashboard = async (req, res) => {
   const { incharge_id } = req.params;
 
   try {
-    const studentsByBranch = await pool.query(`
-  SELECT
-    d.dept_name AS branch,
-    COUNT(u.id) AS total_students
-  FROM users u
-  JOIN department d ON u.department_id = d.id
-  JOIN roles r ON u.role_id = r.id
-  WHERE r.role_name = 'student'
-  GROUP BY d.dept_name
-  ORDER BY d.dept_name
-`);
+    // Students by branch
+    const studentsByBranchRaw = await prisma.user.groupBy({
+      by: ['department_id'],
+      where: {
+        role: { role_name: 'student' },
+        department_id: { not: null },
+      },
+      _count: { id: true },
+    });
 
-    const applicationsByBranch = await pool.query(
-      `
-  SELECT
-    d.dept_name AS branch,
-    COUNT(a.id) AS total_applications
-  FROM applications a
-  JOIN users u ON a.student_id = u.id
-  JOIN department d ON u.department_id = d.id
-  WHERE a.incharge_id = $1
-  GROUP BY d.dept_name
-  `,
-      [incharge_id],
-    );
+    // Get department names
+    const deptIds = studentsByBranchRaw.map((r) => r.department_id).filter(Boolean);
+    const departments = await prisma.department.findMany({
+      where: { id: { in: deptIds } },
+    });
+    const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.dept_name]));
+
+    const studentsByBranch = studentsByBranchRaw.map((r) => ({
+      branch: deptMap[r.department_id] || 'Unknown',
+      total_students: r._count.id,
+    }));
+
+    // Applications by branch for this incharge
+    const applicationsByBranchRaw = await prisma.application.groupBy({
+      by: ['department_id'],
+      where: {
+        incharge_id: parseInt(incharge_id),
+        department_id: { not: null },
+      },
+      _count: { id: true },
+    });
+
+    // Need department names for applications too
+    const appDeptIds = applicationsByBranchRaw.map((r) => r.department_id).filter(Boolean);
+    const appDepts = await prisma.department.findMany({
+      where: { id: { in: appDeptIds } },
+    });
+    const appDeptMap = Object.fromEntries(appDepts.map((d) => [d.id, d.dept_name]));
+
+    const applicationsByBranch = applicationsByBranchRaw.map((r) => ({
+      branch: appDeptMap[r.department_id] || 'Unknown',
+      total_applications: r._count.id,
+    }));
 
     res.json({
-      studentsByBranch: studentsByBranch.rows,
-      applicationsByBranch: applicationsByBranch.rows,
+      studentsByBranch,
+      applicationsByBranch,
     });
   } catch (error) {
     console.error("Dashboard error:", error);
@@ -307,28 +351,25 @@ export const notifyStudentCompletion = async (req, res) => {
   const { application_id } = req.params;
 
   try {
-    const result = await pool.query(
-      `SELECT 
-         a.application_id,
-         a.type,
-         a.stage,
-         u.user_email,
-         u.moodle_id,
-         u.username
-       FROM applications a
-       JOIN users u ON a.student_id = u.id
-       WHERE a.application_id = $1`,
-      [application_id],
-    );
+    const app = await prisma.application.findFirst({
+      where: { application_id },
+      include: {
+        student: {
+          select: {
+            user_email: true,
+            moodle_id: true,
+            username: true,
+          },
+        },
+      },
+    });
 
-    if (result.rowCount === 0) {
+    if (!app) {
       return res.status(404).json({
         success: false,
         message: "Application not found",
       });
     }
-
-    const app = result.rows[0];
 
     if (app.stage !== "completed") {
       return res.status(400).json({
@@ -339,12 +380,12 @@ export const notifyStudentCompletion = async (req, res) => {
 
     await transporter.sendMail({
       from: `"Application Portal" <${process.env.EMAIL_USER}>`,
-      to: app.user_email,
+      to: app.student?.user_email,
       subject: "Application Completed - Document Ready",
       html: `
         <h2>Your Application is Completed. Please Collect your Documents from the Exam Section.</h2>
-        <p><b>Name:</b> ${app.username}</p>
-        <p><b>Moodle ID:</b> ${app.moodle_id}</p>
+        <p><b>Name:</b> ${app.student?.username}</p>
+        <p><b>Moodle ID:</b> ${app.student?.moodle_id}</p>
         <p><b>Application ID:</b> ${app.application_id}</p>
         <p><b>Type:</b> ${app.type}</p>
         <p>Your document is ready for collection from the department office.</p>
