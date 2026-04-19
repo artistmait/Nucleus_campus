@@ -1,13 +1,7 @@
 import multer from "multer";
-import path from "path";
 
-// Store files temporarily before uploading to Cloudinary
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // unique name
-  },
-});
+// Use memory storage to avoid disk dependency in production
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
@@ -15,5 +9,9 @@ const fileFilter = (req, file, cb) => {
   else cb(new Error("Invalid file type. Only JPG, PNG, and PDF allowed."));
 };
 
-const upload = multer({ storage, fileFilter });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+});
 export default upload;

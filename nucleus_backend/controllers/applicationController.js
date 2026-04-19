@@ -1,6 +1,6 @@
 import prisma from "../config/prismaClient.js";
 import cloudinary from "../config/cloudinaryConfig.js";
-import fs from "fs";
+import { Readable } from "stream";
 import { transporter } from "../config/email.js";
 import notificationService from "../services/notificationService.js";
 
@@ -11,6 +11,23 @@ export const STATUS_MESSAGES = {
     completed:     (appLabel) => `Your ${appLabel} application is fully processed and completed. You may collect your documents.`,
     critical:      (appLabel) => `Action needed: Your ${appLabel} application has been escalated to CRITICAL priority — please visit the office.`,
 };
+
+const uploadToCloudinary = (file) =>
+  new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "nucleus/student-documents",
+        resource_type: "auto",
+        access_mode: "public",
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        return resolve(result);
+      },
+    );
+
+    Readable.from(file.buffer).pipe(uploadStream);
+  });
 
 
 export const submitApplication = async (req, res) => {
@@ -23,14 +40,8 @@ export const submitApplication = async (req, res) => {
         .json({ success: false, message: "Document is required" });
     }
 
-    // Upload to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: "nucleus/student-documents",
-      resource_type: "auto",
-      access_mode: "public",
-    });
-
-    fs.unlinkSync(req.file.path);
+    // Upload to Cloudinary from memory buffer
+    const uploadResult = await uploadToCloudinary(req.file);
 
     // Use Prisma interactive transaction
     const application = await prisma.$transaction(async (tx) => {
@@ -108,24 +119,28 @@ export const submitApplication = async (req, res) => {
     }
 
     // Send email notif on submit
-    await transporter.sendMail({
-      from: `"Application Portal" <${process.env.EMAIL_USER}>`,
-      to: studentUser.user_email,
-      subject: "Application Submitted Successfully",
-      html: `
-    <h2>Application Submitted Successfully</h2>
-    <p><b>Moodle ID:</b> ${studentUser.moodle_id}</p>
-    <p><b>Application ID:</b> ${application.application_id}</p>
-    <p><b>Application Type:</b> ${application.type}</p>
-    <p><b>Status:</b> ${application.status}</p>
-    <p><b>Deadline:</b> ${
-      application.deadline
-        ? new Date(application.deadline).toLocaleDateString()
-        : "Not specified"
-    }</p>
-    <p><b>Submitted On:</b> ${new Date(application.created_at).toLocaleString()}</p>
-  `,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"Application Portal" <${process.env.EMAIL_USER}>`,
+        to: studentUser.user_email,
+        subject: "Application Submitted Successfully",
+        html: `
+      <h2>Application Submitted Successfully</h2>
+      <p><b>Moodle ID:</b> ${studentUser.moodle_id}</p>
+      <p><b>Application ID:</b> ${application.application_id}</p>
+      <p><b>Application Type:</b> ${application.type}</p>
+      <p><b>Status:</b> ${application.status}</p>
+      <p><b>Deadline:</b> ${
+        application.deadline
+          ? new Date(application.deadline).toLocaleDateString()
+          : "Not specified"
+      }</p>
+      <p><b>Submitted On:</b> ${new Date(application.created_at).toLocaleString()}</p>
+    `,
+      });
+    } catch (mailError) {
+      console.error("Email send failed:", mailError);
+    }
 
     res.json({
       success: true,
@@ -201,14 +216,8 @@ export const updateMyApplicationDocument = async (req, res) => {
         .json({ success: false, message: "File is required" });
     }
 
-    // Upload new file to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: "nucleus/student-documents",
-      resource_type: "auto",
-      access_mode: "public",
-    });
-
-    fs.unlinkSync(req.file.path);
+    // Upload new file to Cloudinary from memory buffer
+    const uploadResult = await uploadToCloudinary(req.file);
 
     // Use Prisma interactive transaction
     const result = await prisma.$transaction(async (tx) => {
