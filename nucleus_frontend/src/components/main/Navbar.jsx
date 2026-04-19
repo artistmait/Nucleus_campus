@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Atom, Menu, X, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { buildApiUrl } from "../../config/api";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,7 +24,7 @@ export default function Navbar() {
 
    const fetchHistory = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/notifications/${userId}`);
+        const res = await fetch(buildApiUrl(`/api/notifications/${userId}`));
         const data = await res.json();
         if (data.success) {
           setNotifications(data.notifications);
@@ -37,7 +38,7 @@ export default function Navbar() {
     fetchHistory();
 
     const eventSource = new EventSource(
-      `http://localhost:5000/api/notifications/stream/${userId}`
+      buildApiUrl(`/api/notifications/stream/${userId}`),
     );
 
     eventSource.onmessage = (event) => {
@@ -64,7 +65,7 @@ export default function Navbar() {
     if (unreadIds.length === 0) return;
 
     try {
-      await fetch("http://localhost:5000/api/notifications/read", {
+      await fetch(buildApiUrl("/api/notifications/read"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: unreadIds }),

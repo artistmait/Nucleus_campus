@@ -18,7 +18,7 @@ import {
   Line,
 } from "recharts";
 
-import axios from "axios";
+import api from "../../config/api";
 
 const SENTIMENT_COLORS = {
   positive: "#10B981",
@@ -55,11 +55,11 @@ export const IcLandingPage = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:5000/api/incharge/getInchargeDashboard",
+        const res = await api.get(
+          "/api/incharge/getInchargeDashboard",
         );
-        const f_res = await axios.get(
-          "http://localhost:5000/api/predict/feedbackanalytics",
+        const f_res = await api.get(
+          "/api/predict/feedbackanalytics",
         );
         setDashboardData(res.data);
         setFeedbackData(f_res.data);

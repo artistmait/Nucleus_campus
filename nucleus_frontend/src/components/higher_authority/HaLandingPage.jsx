@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../config/api";
 import Navbar from "../main/Navbar";
 import Footer from "../main/Footer";
 import { Card, CardHeader, CardContent } from "../ui/Card";
@@ -64,8 +64,8 @@ export const HaLandingPage = () => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/predict/feedbackanalytics`,
+        const res = await api.get(
+          "/api/predict/feedbackanalytics",
         );
 
         setDashboardData(res.data);

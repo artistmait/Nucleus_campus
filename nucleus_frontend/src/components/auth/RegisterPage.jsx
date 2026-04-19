@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
-import axios from "axios";
+import api from "../../config/api";
 import { Link, useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
@@ -42,9 +42,9 @@ const RegisterPage = () => {
         department_id: Number(formData.department_id),
         password: formData.password,
       };
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/signup",
-        payload
+      const res = await api.post(
+        "/api/auth/signup",
+        payload,
       );
       if (res.data.success) {
         toast.success(res.data?.message || "Registration Successful");

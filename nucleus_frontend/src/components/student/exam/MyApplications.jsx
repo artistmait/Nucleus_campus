@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "../../main/Navbar";
@@ -68,8 +68,8 @@ export default function MyApplications() {
 
     const fetchApplications = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/student/getApplications/${user.id}`,
+        const res = await api.get(
+          `/api/student/getApplications/${user.id}`,
         );
 
         if (res.data.success) {
@@ -131,8 +131,8 @@ export default function MyApplications() {
     formData.append("documents", newFile);
 
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/student/updateDocument/${selectedApp.application_id}`,
+      const res = await api.put(
+        `/api/student/updateDocument/${selectedApp.application_id}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -166,7 +166,7 @@ export default function MyApplications() {
         return;
       }
 
-      const res = await axios.post("http://localhost:5000/api/predict/feedback", {
+      const res = await api.post("/api/predict/feedback", {
         user_id: user.id,
         ...feedbackData,
       });

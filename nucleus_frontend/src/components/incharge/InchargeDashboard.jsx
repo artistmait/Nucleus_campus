@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import axios from "axios";
+import api, { buildApiUrl } from "../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import {
   FileText,
@@ -67,8 +67,8 @@ export default function InchargeDashboard() {
 
     const fetchApplications = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/incharge/getApplication/${user.id}`,
+        const res = await api.get(
+          `/api/incharge/getApplication/${user.id}`,
         );
 
         if (res.data.success) {
@@ -96,7 +96,9 @@ export default function InchargeDashboard() {
     fetchApplications();
 
     // Auto-listen to AI Agent SLA updates strictly for refreshing this dashboard seamlessly
-    const eventSource = new EventSource(`http://localhost:5000/api/notifications/stream/${user.id}`);
+    const eventSource = new EventSource(
+      buildApiUrl(`/api/notifications/stream/${user.id}`),
+    );
     eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === 'critical') {
@@ -111,8 +113,8 @@ export default function InchargeDashboard() {
 
   const handleNotesUpdate = async () => {
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/incharge/updateNotes/${selectedApp.application_id}`,
+      const res = await api.put(
+        `/api/incharge/updateNotes/${selectedApp.application_id}`,
         { app_notes: notes },
       );
 
@@ -145,8 +147,8 @@ export default function InchargeDashboard() {
 
   const handleStageUpdate = async (application_id, payload) => {
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/incharge/updateApplication/${application_id}`,
+      const res = await api.put(
+        `/api/incharge/updateApplication/${application_id}`,
         payload,
       );
 
@@ -154,8 +156,8 @@ export default function InchargeDashboard() {
         toast.success("Application updated!");
 
         if (payload.markCompleted === true) {
-          await axios.post(
-            `http://localhost:5000/api/incharge/notify/${application_id}`,
+          await api.post(
+            `/api/incharge/notify/${application_id}`,
           );
           toast.success("Student notified via email!");
         }

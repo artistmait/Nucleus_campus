@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Navbar from "../../main/Navbar";
 import Footer from "../../main/Footer";
-import axios from "axios";
+import api from "../../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
@@ -62,12 +62,12 @@ export default function KTFormSubmission() {
         department_id: formData.department_id,
       };
 
-      const res = await axios.post(
-        "http://localhost:5000/api/student/submitApplication",
+      const res = await api.post(
+        "/api/student/submitApplication",
         payload,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
 
       if (res.data.success) {

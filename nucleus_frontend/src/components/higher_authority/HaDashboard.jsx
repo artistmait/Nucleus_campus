@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import axios from "axios";
+import api from "../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import {
@@ -89,8 +89,8 @@ export default function HodDashboard() {
   const fetchApplications = useCallback(async () => {
     if (!department_id) return;
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/higher-authority/getApplications/${department_id}`,
+      const res = await api.get(
+        `/api/higher-authority/getApplications/${department_id}`,
       );
       if (res.data.success) {
         setApplications(res.data.applications);
@@ -262,8 +262,8 @@ export default function HodDashboard() {
 
   const handlePriorityUpdate = async () => {
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/higher-authority/updatePriority/${selectedApplication.application_id}`,
+      const res = await api.put(
+        `/api/higher-authority/updatePriority/${selectedApplication.application_id}`,
         { priority: newPriority },
       );
 
@@ -280,9 +280,9 @@ export default function HodDashboard() {
 
   const handleQuickEscalate = async (appId) => {
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/higher-authority/updatePriority/${appId}`,
-        { priority: 'critical' },
+      const res = await api.put(
+        `/api/higher-authority/updatePriority/${appId}`,
+        { priority: "critical" },
       );
 
       if (res.data.success) {

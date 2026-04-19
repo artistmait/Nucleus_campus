@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
@@ -64,8 +64,8 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
+      const res = await api.post(
+        "/api/auth/login",
         formData,
       );
 
@@ -160,8 +160,8 @@ const LoginPage = () => {
               <GoogleLogin
                 onSuccess={async (credentialResponse) => {
                   try {
-                    const res = await axios.post(
-                      "http://localhost:5000/api/auth/google-login",
+                    const res = await api.post(
+                      "/api/auth/google-login",
                       {
                         credential: credentialResponse.credential, // send the raw token
                       },
