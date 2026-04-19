@@ -1,0 +1,37 @@
+FROM node:20-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-venv \
+    libgomp1 \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY nucleus_backend/package*.json ./nucleus_backend/
+RUN cd nucleus_backend && npm ci --omit=dev
+
+COPY nucleus_flask_backend/requirements.txt ./nucleus_flask_backend/requirements.txt
+RUN python3 - <<'PY'
+from pathlib import Path
+src = Path("/app/nucleus_flask_backend/requirements.txt")
+data = src.read_bytes()
+try:
+    text = data.decode("utf-16")
+except UnicodeError:
+    text = data.decode("utf-8")
+Path("/app/nucleus_flask_backend/requirements-utf8.txt").write_text(text, encoding="utf-8")
+PY
+RUN python3 -m pip install --no-cache-dir -r /app/nucleus_flask_backend/requirements-utf8.txt
+
+COPY nucleus_backend ./nucleus_backend
+COPY nucleus_flask_backend ./nucleus_flask_backend
+
+RUN mkdir -p /app/nucleus_backend/uploads
+
+ENV NODE_ENV=production
+EXPOSE 5000 5001
+
+CMD ["sh", "-c", "cd /app/nucleus_flask_backend && python3 app.py & cd /app/nucleus_backend && node server.js"]

@@ -1,0 +1,12 @@
+**/.git
+**/.gitignore
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/env
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.log
+nucleus_backend/uploads

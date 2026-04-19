@@ -1,0 +1,15 @@
+FROM node:20-slim AS build
+
+WORKDIR /app
+COPY nucleus_frontend/package*.json ./
+RUN npm ci
+
+COPY nucleus_frontend ./
+RUN npm run build
+
+FROM nginx:1.27-alpine
+COPY nucleus_frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
