@@ -60,7 +60,7 @@ export default function Table({
       className={`w-full overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-lg ${className}`}
     >
       {/* Search + Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 bg-indigo-50 border-b border-indigo-100">
+      <div className="flex flex-col gap-3 px-4 py-4 bg-indigo-50 border-b border-indigo-100 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <input
           type="text"
           value={search}
@@ -69,10 +69,10 @@ export default function Table({
             setPage(1);
           }}
           placeholder={searchPlaceholder}
-          className="w-64 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:border-indigo-700 transition"
+          className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:border-indigo-700 transition sm:w-64"
         />
 
-        <div className="flex items-center gap-3 text-gray-700 text-sm">
+        <div className="flex items-center gap-2 text-gray-700 text-sm">
           <span className="font-medium text-indigo-700">Rows per page:</span>
           <select
             value={itemsPerPage}
@@ -92,86 +92,89 @@ export default function Table({
       </div>
 
       {/* Table */}
-      <table className="w-full border-collapse text-sm text-gray-700">
-        <thead>
-          <tr className="bg-indigo-800 text-white uppercase text-xs tracking-wider">
-            {columns.map((col) => (
-              <th
-                key={String(col.key)}
-                className={`px-5 py-4 font-semibold text-left ${
-                  col.className || ""
-                } ${
-                  col.sortable
-                    ? "cursor-pointer select-none hover:bg-indigo-800 transition"
-                    : ""
-                }`}
-                onClick={() => col.sortable && handleSort(col.key)}
-              >
-                <div className="flex items-center gap-1">
-                  {col.header}
-                  {col.sortable && sortConfig.key === col.key && (
-                    <span className="text-indigo-200 text-xs">
-                      {sortConfig.direction === "asc" ? "▲" : "▼"}
-                    </span>
-                  )}
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-
-        <tbody>
-          {paginatedData.length === 0 ? (
-            <tr>
-              <td
-                colSpan={columns.length}
-                className="py-8 text-center text-gray-500"
-              >
-                No data found
-              </td>
-            </tr>
-          ) : (
-            paginatedData.map((row, i) => {
-              // const status = row.status?.toLowerCase();
-              const priority = row.priority?.toLowerCase();
-              const role = row.role?.toLowerCase(); // if role exists in row
-
-              const shouldHighlight =(priority === "high" ||
-                  priority === "critical" ||
-                  role === "alumni");
-
-              return (
-                <tr
-                  key={i}
-                  className={`transition-all duration-150 ${
-                    shouldHighlight
-                      ? "bg-red-200 hover:bg-red-300"
-                      : i % 2 === 0
-                        ? "bg-white"
-                        : "bg-indigo-50/40"
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-[720px] w-full border-collapse text-xs text-gray-700 sm:text-sm">
+          <thead>
+            <tr className="bg-indigo-800 text-white uppercase text-[11px] tracking-wider sm:text-xs">
+              {columns.map((col) => (
+                <th
+                  key={String(col.key)}
+                  className={`px-3 py-3 font-semibold text-left sm:px-5 sm:py-4 ${
+                    col.className || ""
+                  } ${
+                    col.sortable
+                      ? "cursor-pointer select-none hover:bg-indigo-800 transition"
+                      : ""
                   }`}
+                  onClick={() => col.sortable && handleSort(col.key)}
                 >
-                  {columns.map((col) => (
-                    <td
-                      key={String(col.key)}
-                      className={`px-5 py-4 border-b border-indigo-50 ${
-                        col.className || ""
-                      }`}
-                    >
-                      {col.render
-                        ? col.render(row[col.key], row)
-                        : String(row[col.key] ?? "")}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                  <div className="flex items-center gap-1">
+                    {col.header}
+                    {col.sortable && sortConfig.key === col.key && (
+                      <span className="text-indigo-200 text-xs">
+                        {sortConfig.direction === "asc" ? "▲" : "▼"}
+                      </span>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {paginatedData.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="py-8 text-center text-gray-500"
+                >
+                  No data found
+                </td>
+              </tr>
+            ) : (
+              paginatedData.map((row, i) => {
+                // const status = row.status?.toLowerCase();
+                const priority = row.priority?.toLowerCase();
+                const role = row.role?.toLowerCase(); // if role exists in row
+
+                const shouldHighlight =
+                  priority === "high" ||
+                  priority === "critical" ||
+                  role === "alumni";
+
+                return (
+                  <tr
+                    key={i}
+                    className={`transition-all duration-150 ${
+                      shouldHighlight
+                        ? "bg-red-200 hover:bg-red-300"
+                        : i % 2 === 0
+                          ? "bg-white"
+                          : "bg-indigo-50/40"
+                    }`}
+                  >
+                    {columns.map((col) => (
+                      <td
+                        key={String(col.key)}
+                        className={`px-3 py-3 border-b border-indigo-50 sm:px-5 sm:py-4 ${
+                          col.className || ""
+                        }`}
+                      >
+                        {col.render
+                          ? col.render(row[col.key], row)
+                          : String(row[col.key] ?? "")}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-5 py-4 border-t border-indigo-100 bg-indigo-50 text-gray-700 text-sm">
+      <div className="flex flex-col gap-3 px-4 py-4 border-t border-indigo-100 bg-indigo-50 text-gray-700 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <span className="font-medium text-indigo-700">
           Page {page} of {totalPages || 1}
         </span>
