@@ -1,6 +1,10 @@
 import axios from "axios";
 import prisma from "../config/prismaClient.js";
 
+const DEFAULT_FLASK_URL = "http://localhost:5001";
+const flaskBaseUrl = process.env.FLASK_API_URL || DEFAULT_FLASK_URL;
+const normalizedFlaskBaseUrl = flaskBaseUrl.replace(/\/+$/, "");
+
 export const feedback_predict = async (req, res) => {
   try {
     const { feedbackText, user_id, q1, q2, q3, text } = req.body;
@@ -39,7 +43,7 @@ export const feedback_predict = async (req, res) => {
     }
 
     // Send to Flask for prediction
-    const flaskResponse = await axios.post("http://localhost:5001/predict", {
+    const flaskResponse = await axios.post(`${normalizedFlaskBaseUrl}/predict`, {
       text: combined,
       q1: normalizedQ1,
       q2: normalizedQ2,
