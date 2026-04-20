@@ -1,11 +1,20 @@
+from pathlib import Path
+
 import joblib
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+BASE_DIR = Path(__file__).resolve().parent
+
 # Load the vectorizer and model once when starting the app
-vectorizer = joblib.load('vectorizer.pkl')
-model = joblib.load('sentiment_model1.pkl')
+vectorizer = joblib.load(BASE_DIR / 'vectorizer.pkl')
+model = joblib.load(BASE_DIR / 'sentiment_model1.pkl')
+
+
+@app.get('/health')
+def health_check():
+    return jsonify({'status': 'ok'})
 
 @app.route('/predict', methods=['POST'])
 def predict():
