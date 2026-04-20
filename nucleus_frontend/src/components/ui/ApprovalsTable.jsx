@@ -55,6 +55,18 @@ export default function Table({
     if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
   };
 
+  const getRowClassName = (row, index) => {
+    const priority = row.priority?.toLowerCase();
+    const role = row.role?.toLowerCase();
+    const shouldHighlight =
+      priority === "high" || priority === "critical" || role === "alumni";
+
+    if (shouldHighlight) return "bg-red-200 hover:bg-red-300";
+    return index % 2 === 0
+      ? "bg-white hover:bg-indigo-50"
+      : "bg-indigo-50/40 hover:bg-indigo-100";
+  };
+
   return (
     <div
       className={`w-full rounded-2xl border border-indigo-100 bg-white shadow-lg ${className}`}
@@ -91,8 +103,54 @@ export default function Table({
         </div>
       </div>
 
+      {/* Mobile Cards */}
+      <div className="block sm:hidden">
+        {paginatedData.length === 0 ? (
+          <div className="px-4 py-8 text-center text-gray-500">No data found</div>
+        ) : (
+          <div className="px-4 py-4 space-y-4">
+            {paginatedData.map((row, i) => (
+              <div
+                key={i}
+                className={`rounded-xl border border-indigo-100 p-4 shadow-sm ${getRowClassName(row, i)}`}
+              >
+                <div className="space-y-3">
+                  {columns.map((col) => {
+                    const isActionColumn =
+                      String(col.key).toLowerCase().includes("action") ||
+                      String(col.header).toLowerCase().includes("action");
+
+                    return (
+                      <div
+                        key={String(col.key)}
+                        className="grid grid-cols-[110px_minmax(0,1fr)] gap-3 items-start"
+                      >
+                        <span className="text-[11px] uppercase tracking-wider text-gray-500">
+                          {col.header}
+                        </span>
+                        <div
+                          className={`text-sm text-gray-800 ${
+                            isActionColumn
+                              ? "flex items-center justify-start gap-3"
+                              : "text-right"
+                          }`}
+                        >
+                          {col.render
+                            ? col.render(row[col.key], row)
+                            : String(row[col.key] ?? "")}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Table */}
-      <div className="w-full overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">
+      <div className="hidden sm:block w-full overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">
         <table className="min-w-[820px] w-full border-collapse text-xs text-gray-700 sm:text-sm">
           <thead>
             <tr className="bg-indigo-800 text-white uppercase text-[11px] tracking-wider sm:text-xs">
@@ -132,42 +190,25 @@ export default function Table({
                 </td>
               </tr>
             ) : (
-              paginatedData.map((row, i) => {
-                // const status = row.status?.toLowerCase();
-                const priority = row.priority?.toLowerCase();
-                const role = row.role?.toLowerCase(); // if role exists in row
-
-                const shouldHighlight =
-                  priority === "high" ||
-                  priority === "critical" ||
-                  role === "alumni";
-
-                return (
-                  <tr
-                    key={i}
-                    className={`transition-all duration-150 ${
-                      shouldHighlight
-                        ? "bg-red-200 hover:bg-red-300"
-                        : i % 2 === 0
-                          ? "bg-white"
-                          : "bg-indigo-50/40"
-                    }`}
-                  >
-                    {columns.map((col) => (
-                      <td
-                        key={String(col.key)}
-                        className={`px-3 py-3 border-b border-indigo-50 sm:px-5 sm:py-4 ${
-                          col.className || ""
-                        }`}
-                      >
-                        {col.render
-                          ? col.render(row[col.key], row)
-                          : String(row[col.key] ?? "")}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })
+              paginatedData.map((row, i) => (
+                <tr
+                  key={i}
+                  className={`transition-all duration-150 ${getRowClassName(row, i)}`}
+                >
+                  {columns.map((col) => (
+                    <td
+                      key={String(col.key)}
+                      className={`px-3 py-3 border-b border-indigo-50 sm:px-5 sm:py-4 ${
+                        col.className || ""
+                      }`}
+                    >
+                      {col.render
+                        ? col.render(row[col.key], row)
+                        : String(row[col.key] ?? "")}
+                    </td>
+                  ))}
+                </tr>
+              ))
             )}
           </tbody>
         </table>
