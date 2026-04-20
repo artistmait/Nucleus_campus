@@ -57,7 +57,7 @@ export default function Table({
 
   return (
     <div
-      className={`w-full overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-lg ${className}`}
+      className={`w-full rounded-2xl border border-indigo-100 bg-white shadow-lg ${className}`}
     >
       {/* Search + Controls */}
       <div className="flex flex-col gap-3 px-4 py-4 bg-indigo-50 border-b border-indigo-100 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -92,8 +92,8 @@ export default function Table({
       </div>
 
       {/* Table */}
-      <div className="w-full overflow-x-auto">
-        <table className="min-w-[720px] w-full border-collapse text-xs text-gray-700 sm:text-sm">
+      <div className="w-full overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">
+        <table className="min-w-[820px] w-full border-collapse text-xs text-gray-700 sm:text-sm">
           <thead>
             <tr className="bg-indigo-800 text-white uppercase text-[11px] tracking-wider sm:text-xs">
               {columns.map((col) => (
