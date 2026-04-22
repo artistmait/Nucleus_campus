@@ -4,7 +4,7 @@ import api from "../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
-import { Mail, ShieldCheck, X } from "lucide-react";
+import { Eye, EyeOff, Mail, ShieldCheck, X } from "lucide-react";
 import ForgotPassword from "./ForgotPassword";
 
 const LoginPage = () => {
@@ -20,7 +20,7 @@ const LoginPage = () => {
   const [forgotOtp, setForgotOtp] = useState("");
   const [forgotStatus, setForgotStatus] = useState(null);
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);     
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLoginSuccess = (user, token) => {
     localStorage.setItem("token", token);
@@ -221,15 +221,24 @@ const LoginPage = () => {
             <label className="block text-sm font-semibold text-gray-700 ml-1">
               Password
             </label>
-            <input
-            type={showPassword ? "text" : "password"}
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="w-full px-5 py-4 bg-white/50 border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all duration-300 shadow-sm"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className="w-full px-5 py-4 pr-12 bg-white/50 border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all duration-300 shadow-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <button
               type="button"
               onClick={openForgot}
