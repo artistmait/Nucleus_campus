@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import api from "../../config/api";
 import { toast, ToastContainer } from "react-toastify";
@@ -19,6 +20,7 @@ const LoginPage = () => {
   const [forgotOtp, setForgotOtp] = useState("");
   const [forgotStatus, setForgotStatus] = useState(null);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);     
 
   const handleLoginSuccess = (user, token) => {
     localStorage.setItem("token", token);
@@ -220,6 +222,7 @@ const LoginPage = () => {
               Password
             </label>
             <input
+            type={showPassword ? "text" : "password"}
               type="password"
               name="password"
               value={formData.password}

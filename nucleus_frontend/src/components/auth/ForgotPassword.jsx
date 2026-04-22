@@ -18,7 +18,7 @@ export default function ForgotPassword({ isOpen, email, otp, onClose, onSuccess 
 	const [formData, setFormData] = useState({ password: "", confirm_password: "" });
 	const [saving, setSaving] = useState(false);
 	const [status, setStatus] = useState(null);
-	const [showPassword, setShowPassword] = useState(false);         // 👈 add these
+	const [showPassword, setShowPassword] = useState(false);        
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 	const isDirty = useMemo(
