@@ -8,6 +8,7 @@ import MarksheetCorrectionForm from "./components/student/exam/MarksheetCorrecti
 import HaDashboard from "./components/higher_authority/HaDashboard";
 import InchargeDashboard from "./components/incharge/InchargeDashboard";
 import ProtectedRoute from "./components/main/ProtectedRoutes";
+import Profile from "./components/main/Profile";
 import MyApplications from "./components/student/exam/MyApplications";
 import KTFormSubmission from "./components/student/exam/KTFormSubmission";
 import { IcLandingPage } from "./components/incharge/IcLandingPage";
@@ -22,6 +23,10 @@ function App() {
     {
       path: "/auth/login",
       element: <LoginPage />,
+    },
+    {
+      element: <ProtectedRoute allowedRoles={[1, 2, 3, 4]} />,
+      children: [{ path: "/profile", element: <Profile /> }],
     },
     {
       element: <ProtectedRoute allowedRoles={[1,4]} />,

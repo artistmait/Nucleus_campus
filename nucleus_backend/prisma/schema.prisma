@@ -32,6 +32,8 @@ model User {
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   user_email    String    @unique(map: "users_email_key") @db.VarChar(255)
   username      String    @db.VarChar(200)
+  reset_otp_hash        String?   @db.VarChar(255)
+  reset_otp_expires_at  DateTime? @db.Timestamp(6)
 
   role       Role?       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   department Department? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
