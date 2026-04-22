@@ -1,7 +1,8 @@
 import prisma from "../config/prismaClient.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 import { Readable } from "stream";
-import { transporter } from "../config/email.js";
+// import { transporter } from "../config/email.js";
+import { resend } from "../config/email.js";
 import notificationService from "../services/notificationService.js";
 
 export const STATUS_MESSAGES = {
@@ -120,10 +121,10 @@ export const submitApplication = async (req, res) => {
 
     // Send email notif on submit
     try {
-      await transporter.sendMail({
-        from: `"Application Portal" <${process.env.EMAIL_USER}>`,
-        to: studentUser.user_email,
-        subject: "Application Submitted Successfully",
+      await resend.emails.send({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Your password reset OTP",
         html: `
       <h2>Application Submitted Successfully</h2>
       <p><b>Moodle ID:</b> ${studentUser.moodle_id}</p>

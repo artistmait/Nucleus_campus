@@ -1,5 +1,6 @@
 import prisma from "../config/prismaClient.js";
-import { transporter } from "../config/email.js";
+// import { transporter } from "../config/email.js";
+import { resend } from "../config/email.js";
 import notificationService from "../services/notificationService.js";
 import { STATUS_MESSAGES } from "./applicationController.js";
 
@@ -27,7 +28,7 @@ export const getInchargeApplications = async (req, res) => {
           },
         },
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: "desc" },
     });
 
     // Flatten to match the original response shape
@@ -35,7 +36,7 @@ export const getInchargeApplications = async (req, res) => {
       application_id: app.application_id,
       type: app.type,
       status: app.status,
-      stage: app.stage || 'submitted',
+      stage: app.stage || "submitted",
       priority: app.priority,
       deadline: app.deadline,
       created_at: app.created_at,
@@ -294,29 +295,33 @@ export const getInchargeDashboard = async (req, res) => {
   try {
     // Students by branch
     const studentsByBranchRaw = await prisma.user.groupBy({
-      by: ['department_id'],
+      by: ["department_id"],
       where: {
-        role: { role_name: 'student' },
+        role: { role_name: "student" },
         department_id: { not: null },
       },
       _count: { id: true },
     });
 
     // Get department names
-    const deptIds = studentsByBranchRaw.map((r) => r.department_id).filter(Boolean);
+    const deptIds = studentsByBranchRaw
+      .map((r) => r.department_id)
+      .filter(Boolean);
     const departments = await prisma.department.findMany({
       where: { id: { in: deptIds } },
     });
-    const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.dept_name]));
+    const deptMap = Object.fromEntries(
+      departments.map((d) => [d.id, d.dept_name]),
+    );
 
     const studentsByBranch = studentsByBranchRaw.map((r) => ({
-      branch: deptMap[r.department_id] || 'Unknown',
+      branch: deptMap[r.department_id] || "Unknown",
       total_students: r._count.id,
     }));
 
     // Applications by branch for this incharge
     const applicationsByBranchRaw = await prisma.application.groupBy({
-      by: ['department_id'],
+      by: ["department_id"],
       where: {
         incharge_id: parseInt(incharge_id),
         department_id: { not: null },
@@ -325,14 +330,18 @@ export const getInchargeDashboard = async (req, res) => {
     });
 
     // Need department names for applications too
-    const appDeptIds = applicationsByBranchRaw.map((r) => r.department_id).filter(Boolean);
+    const appDeptIds = applicationsByBranchRaw
+      .map((r) => r.department_id)
+      .filter(Boolean);
     const appDepts = await prisma.department.findMany({
       where: { id: { in: appDeptIds } },
     });
-    const appDeptMap = Object.fromEntries(appDepts.map((d) => [d.id, d.dept_name]));
+    const appDeptMap = Object.fromEntries(
+      appDepts.map((d) => [d.id, d.dept_name]),
+    );
 
     const applicationsByBranch = applicationsByBranchRaw.map((r) => ({
-      branch: appDeptMap[r.department_id] || 'Unknown',
+      branch: appDeptMap[r.department_id] || "Unknown",
       total_applications: r._count.id,
     }));
 
@@ -345,7 +354,6 @@ export const getInchargeDashboard = async (req, res) => {
     res.status(500).json({ message: "Dashboard fetch failed" });
   }
 };
-
 
 export const notifyStudentCompletion = async (req, res) => {
   const { application_id } = req.params;
@@ -379,9 +387,10 @@ export const notifyStudentCompletion = async (req, res) => {
     }
 
     await transporter.sendMail({
-      from: `"Application Portal" <${process.env.EMAIL_USER}>`,
-      to: app.student?.user_email,
-      subject: "Application Completed - Document Ready",
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your password reset OTP",
+      html: `your html here`,
       html: `
         <h2>Your Application is Completed. Please Collect your Documents from the Exam Section.</h2>
         <p><b>Name:</b> ${app.student?.username}</p>
@@ -396,7 +405,6 @@ export const notifyStudentCompletion = async (req, res) => {
       success: true,
       message: "Student notified successfully",
     });
-
   } catch (error) {
     console.error("Error sending notification:", error);
     res.status(500).json({
