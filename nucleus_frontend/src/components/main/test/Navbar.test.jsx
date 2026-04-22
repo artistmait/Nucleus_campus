@@ -42,9 +42,10 @@ describe("Navbar Component", () => {
     const signOutButtons = screen.getAllByRole("button", { name: /Sign Out/i });
     expect(signOutButtons[0]).toBeInTheDocument();
 
-    // Only check one Profile link (avoid multiple matches)
-    const profileLinks = screen.getAllByText(/Profile/i);
-    expect(profileLinks[0]).toBeInTheDocument();
+    // Open profile menu and verify View Profile action
+    const profileButton = screen.getByRole("button", { name: /profile/i });
+    fireEvent.click(profileButton);
+    expect(screen.getByText(/View Profile/i)).toBeInTheDocument();
   });
 
   it("calls navigate and clears storage on logout", () => {

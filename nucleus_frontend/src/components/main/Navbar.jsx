@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect, useRef } from "react";
-import { Atom, Menu, X, Bell } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { Atom, Menu, X, Bell, ChevronDown, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { buildApiUrl } from "../../config/api";
@@ -8,10 +8,14 @@ import { buildApiUrl } from "../../config/api";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [roleId, setRoleId] = useState(null);
+  const [user, setUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const notificationsRef = useRef([]);
+  const profileDesktopRef = useRef(null);
+  const profileMobileRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +23,7 @@ export default function Navbar() {
     if (!userStr) return;
 
     const user = JSON.parse(userStr);
+    setUser(user);
     setRoleId(user.role_id);
     const userId = user.id;
 
@@ -57,6 +62,19 @@ export default function Navbar() {
 
     return () => eventSource.close();
   }, []);
+
+  useEffect(() => {
+    if (!showProfile) return;
+    const handleClickOutside = (event) => {
+      const isInsideDesktop = profileDesktopRef.current?.contains(event.target);
+      const isInsideMobile = profileMobileRef.current?.contains(event.target);
+      if (!isInsideDesktop && !isInsideMobile) {
+        setShowProfile(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showProfile]);
 
    const markAsRead = async () => {
     const unreadIds = notificationsRef.current
@@ -99,6 +117,19 @@ export default function Navbar() {
     if (roleId === 3) return "bg-red-600";       // HA — red, sees all critical
     if (roleId === 2) return "bg-orange-500";    // Incharge — orange
     return "bg-red-600";                          // Student — red
+  };
+
+  const userInitial = useMemo(() => {
+    const source = user?.username || user?.user_email || "U";
+    return source.trim().charAt(0).toUpperCase() || "U";
+  }, [user]);
+
+  const toggleProfile = () => {
+    setShowProfile((prev) => {
+      const next = !prev;
+      if (next) setShowNotifications(false);
+      return next;
+    });
   };
 
    const NotificationItem = ({ notif, idx }) => {
@@ -147,6 +178,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => {
+                  setShowProfile(false);
                   setShowNotifications(!showNotifications);
                   if (!showNotifications) markAsRead();
                 }}
@@ -184,6 +216,33 @@ export default function Navbar() {
               )}
             </div>
 
+            <div className="relative" ref={profileDesktopRef}>
+              <button
+                onClick={toggleProfile}
+                className="flex items-center gap-2 rounded-full px-1.5 py-1 hover:bg-indigo-800/60 transition-colors"
+              >
+                <span className="sr-only">Profile</span>
+                <div className="size-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold">
+                  {userInitial}
+                </div>
+                <ChevronDown size={16} className="text-indigo-200" />
+              </button>
+              {showProfile && (
+                <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden text-gray-800">
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      navigate("/profile");
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <UserRound size={16} className="text-indigo-500" />
+                    View Profile
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex-shrink-0 pl-2">
               <button onClick={handleLogout} className="text-white hover:text-indigo-300 transition-colors font-medium border border-indigo-400 px-4 py-1.5 rounded-lg hover:bg-indigo-800">
                 Sign Out
@@ -194,7 +253,11 @@ export default function Navbar() {
           {/* Mobile toggle */}
           <div className="md:hidden flex items-center gap-4">
             <button
-              onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) markAsRead(); }}
+              onClick={() => {
+                setShowProfile(false);
+                setShowNotifications(!showNotifications);
+                if (!showNotifications) markAsRead();
+              }}
               className="text-white relative mt-1"
             >
               <Bell size={24} />
@@ -204,7 +267,39 @@ export default function Navbar() {
                 </span>
               )}
             </button>
-            <button onClick={() => setIsOpen(!isOpen)} className="text-white focus:outline-none">
+            <div className="relative" ref={profileMobileRef}>
+              <button
+                onClick={toggleProfile}
+                className="flex items-center rounded-full p-0.5 hover:bg-indigo-800/60 transition-colors"
+              >
+                <span className="sr-only">Profile</span>
+                <div className="size-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-semibold">
+                  {userInitial}
+                </div>
+              </button>
+              {showProfile && (
+                <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden text-gray-800">
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      navigate("/profile");
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <UserRound size={16} className="text-indigo-500" />
+                    View Profile
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setShowProfile(false);
+                setShowNotifications(false);
+                setIsOpen(!isOpen);
+              }}
+              className="text-white focus:outline-none"
+            >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
