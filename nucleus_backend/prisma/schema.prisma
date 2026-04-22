@@ -17,68 +17,64 @@ model Role {
 model Department {
   id           Int           @id @default(autoincrement())
   dept_name    String        @unique @db.VarChar(100)
-  users        User[]
   applications Application[]
+  users        User[]
 
   @@map("department")
 }
 
 model User {
-  id            Int       @id @default(autoincrement())
-  moodle_id     String    @unique @db.VarChar(8)
-  password      String
-  role_id       Int?
-  department_id Int?
-  created_at    DateTime? @default(now()) @db.Timestamp(6)
-  user_email    String    @unique(map: "users_email_key") @db.VarChar(255)
-  username      String    @db.VarChar(200)
-  reset_otp_hash        String?   @db.VarChar(255)
-  reset_otp_expires_at  DateTime? @db.Timestamp(6)
-
-  role       Role?       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  department Department? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  documents             Document[]
-  studentApplications   Application[] @relation("StudentApplications")
-  inchargeApplications  Application[] @relation("InchargeApplications")
-  notifications         Notification[]
-  feedbacks             Feedback[]
+  id                   Int            @id @default(autoincrement())
+  moodle_id            String         @unique @db.VarChar(8)
+  password             String
+  role_id              Int?
+  department_id        Int?
+  created_at           DateTime?      @default(now()) @db.Timestamp(6)
+  user_email           String         @unique(map: "users_email_key") @db.VarChar(255)
+  username             String         @db.VarChar(200)
+  reset_otp_hash       String?        @db.VarChar(255)
+  reset_otp_expires_at DateTime?      @db.Timestamp(6)
+  inchargeApplications Application[]  @relation("InchargeApplications")
+  studentApplications  Application[]  @relation("StudentApplications")
+  documents            Document[]
+  feedbacks            Feedback[]
+  notifications        Notification[]
+  department           Department?    @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role                 Role?          @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("users")
 }
 
 model Document {
-  id             Int       @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   student_id     Int
-  document_type  String    @db.VarChar(50)
+  document_type  String        @db.VarChar(50)
   cloudinary_url String
-  uploaded_at    DateTime? @default(now()) @db.Timestamp(6)
-
-  student      User          @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  applications Application[]
+  uploaded_at    DateTime?     @default(now()) @db.Timestamp(6)
+  applications   Application[]
+  student        User          @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("documents")
 }
 
 model Application {
-  id             Int       @id @default(autoincrement())
+  id             Int         @id @default(autoincrement())
   student_id     Int
   incharge_id    Int?
   document_id    Int?
-  type           String    @db.VarChar(50)
-  status         String?   @default("pending") @db.VarChar(20)
-  priority       String?   @default("normal") @db.VarChar(20)
-  deadline       DateTime? @db.Timestamp(6)
-  created_at     DateTime? @default(now()) @db.Timestamp(6)
-  stage          String?   @default("submitted") @db.VarChar(20)
+  type           String      @db.VarChar(50)
+  status         String?     @default("pending") @db.VarChar(20)
+  priority       String?     @default("normal") @db.VarChar(20)
+  deadline       DateTime?   @db.Timestamp(6)
+  created_at     DateTime?   @default(now()) @db.Timestamp(6)
+  stage          String?     @default("submitted") @db.VarChar(20)
   department_id  Int?
   application_id String?
   app_notes      String?
-
-  student    User        @relation("StudentApplications", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  incharge   User?       @relation("InchargeApplications", fields: [incharge_id], references: [id], onUpdate: NoAction)
-  document   Document?   @relation(fields: [document_id], references: [id], onUpdate: NoAction)
-  department Department? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_department")
+  document       Document?   @relation(fields: [document_id], references: [id], onUpdate: NoAction)
+  incharge       User?       @relation("InchargeApplications", fields: [incharge_id], references: [id], onUpdate: NoAction)
+  student        User        @relation("StudentApplications", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  department     Department? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_department")
 
   @@map("applications")
 }
@@ -95,8 +91,7 @@ model Feedback {
   q2             String?   @db.VarChar(20)
   q3             String?   @db.VarChar(20)
   other_text     String?
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("feedback")
 }
@@ -108,8 +103,7 @@ model Notification {
   type       String?   @default("info") @db.VarChar(50)
   read       Boolean?  @default(false)
   created_at DateTime? @default(now()) @db.Timestamp(6)
-
-  user User? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("notifications")
 }
