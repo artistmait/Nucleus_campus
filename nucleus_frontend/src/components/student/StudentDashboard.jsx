@@ -50,7 +50,7 @@ const LandingPage = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-[#191c1e] tracking-tight">
             Why Choose NUCLEUS?
           </h2>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
+          <div className="mt-12 grid gap-8 md:grid-cols-[repeat(auto-fit,minmax(260px,320px))] md:justify-center">
             <div className="bg-white p-8 rounded-[24px] shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:shadow-[0_12px_40px_rgba(49,46,129,0.06)] hover:-translate-y-1 transition-all duration-300">
               <FileAxis3D className="mx-auto bg-[#f7f9fb] text-[#4338ca] p-4 rounded-full size-[72px]" />
               <h3 className="mt-6 font-bold text-xl text-[#191c1e]">Digital Processing</h3>

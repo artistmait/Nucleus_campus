@@ -1,6 +1,7 @@
-import { Award, FileCheck2, FileText, GraduationCap } from "lucide-react";
+import { Award, ArrowLeft, FileCheck2, FileText, GraduationCap } from "lucide-react";
 import Navbar from "../../main/Navbar";
 import Footer from "../../main/Footer";
+import { useNavigate } from "react-router-dom";
 
 // Data for the service cards
 const services = [
@@ -10,18 +11,18 @@ const services = [
     description: "Request correction of name on your official academic marksheet",
     link:'/student/correction'
   },
-  {
-    icon: GraduationCap,
-    title: "Official Transcript",
-    description: "Request return of official transcripts for external use",
-    link:'/transcript'
-  },
-  {
-    icon: Award,
-    title: "Degree Certificate",
-    description: "Request your degree completion certificate",
-    link:'/certificate'
-  },
+  // {
+  //   icon: GraduationCap,
+  //   title: "Official Transcript",
+  //   description: "Request return of official transcripts for external use",
+  //   link:'/transcript'
+  // },
+  // {
+  //   icon: Award,
+  //   title: "Degree Certificate",
+  //   description: "Request your degree completion certificate",
+  //   link:'/certificate'
+  // },
   {
     icon: FileCheck2,
     title: "KT Exam Form Submission",
@@ -31,11 +32,23 @@ const services = [
 ];
 
 export default function ExamSection() {
+  const navigate = useNavigate();
+
   return (
     <div className="w-full">
       <Navbar />
 
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#464554] font-semibold shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:bg-[#f2f4f6] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+        </div>
         {/* --- Page Header --- */}
         <header className="mb-14 text-center md:text-left">
           <h1 className="text-4xl md:text-5xl font-bold text-indigo-900 mb-4">
@@ -79,7 +92,7 @@ export default function ExamSection() {
           <h2 className="text-3xl font-bold text-indigo-900 mb-10">
             Services Provided
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
             {services.map((service) => (
               <div
                 key={service.title}

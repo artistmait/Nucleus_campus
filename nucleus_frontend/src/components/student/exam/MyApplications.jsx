@@ -6,11 +6,12 @@ import Navbar from "../../main/Navbar";
 import Footer from "../../main/Footer";
 import Table from "../../ui/ApprovalsTable";
 import StatCard from "../../ui/StatCard";
-import { FileText, Clock, AlertCircle, Pencil } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, FileText, Pencil } from "lucide-react";
 import { DialogBox } from "../../ui/DialogBox";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function MyApplications() {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -273,12 +274,16 @@ export default function MyApplications() {
       <Navbar />
 
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
-        {/* <button
-                onClick={() => navigate(-1)}
-                className="mt-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
-              >
-                ← Back
-              </button> */}
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#464554] font-semibold shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:bg-[#f2f4f6] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+        </div>
         <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-8">
           My Applications
         </h1>

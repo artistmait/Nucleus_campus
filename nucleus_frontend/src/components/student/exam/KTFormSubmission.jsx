@@ -4,7 +4,7 @@ import Footer from "../../main/Footer";
 import api from "../../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import KTTableWrapper from "./KTtable";
 import PrevExamTableWrapper from "./PreviousExamDetailTable";
 
@@ -93,19 +93,29 @@ export default function KTFormSubmission() {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col bg-gray-50">
+    <div className="w-full min-h-screen flex flex-col bg-[#f7f9fb]">
       <Navbar />
-      <main className="flex-grow w-full max-w-5xl mx-auto px-6 md:px-10 lg:px-14 py-12">
+      <main className="flex-grow w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
         <ToastContainer position="top-right" autoClose={3000} />
-        <h1 className="text-4xl font-bold text-indigo-900 mb-6">
-          Marksheet Correction Request
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#464554] font-semibold shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:bg-[#f2f4f6] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+        </div>
+        <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-8">
+          KT Form Application Submission
         </h1>
         {/* Required Documents Info */}
-        <div className="mb-8 bg-indigo-50 border border-indigo-200 rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-indigo-900 mb-2">
+        <div className="mb-10 bg-white shadow-[0_4px_20px_rgba(49,46,129,0.04)] rounded-[24px] p-8 border-none">
+          <h2 className="text-xl font-bold text-[#191c1e] mb-3">
             Required Documents
           </h2>
-          <ul className="list-disc list-inside text-gray-700 leading-relaxed">
+          <ul className="list-disc list-inside text-[#464554] leading-relaxed">
             <li>Scanned copy of your latest marksheet.</li>
             {/* <li>
               Supporting proof (if applicable) such as corrected marks from
@@ -113,27 +123,32 @@ export default function KTFormSubmission() {
             </li>
             <li>Any official communication or email evidence (if relevant).</li> */}
           </ul>
-          <p className="mt-3 text-sm text-gray-600 italic">
-            <AlertTriangle className="size-5" /> Ensure all documents are clear and in PDF or image format
-            (JPEG/PNG). Maximum file size: 5MB.
-            <span className="text-red text-sm">Under Testing</span>
-          </p>
+          <div className="mt-4 flex items-start gap-2 text-sm text-[#464554] bg-[#f7f9fb] p-4 rounded-xl">
+            <AlertTriangle className="size-5 text-amber-600 flex-shrink-0" />
+            <p>
+              Ensure all documents are clear and in PDF or image format
+              (JPEG/PNG). Maximum file size: 5MB.
+              <span className="text-red text-sm">Under Testing</span>
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white shadow-xl rounded-2xl p-10">
+        <div className="bg-white shadow-[0_4px_20px_rgba(49,46,129,0.04)] rounded-[24px] p-8 lg:p-10 border-none">
           <form
             onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6"
+            className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8"
           >
             {/* Student ID */}
             <div>
-              <label className="block font-medium mb-2">Student ID</label>
+              <label className="block text-[13px] font-semibold text-[#464554] uppercase tracking-wide mb-2">
+                Student ID
+              </label>
               <input
                 type="text"
                 name="student_id"
                 value={formData.student_id}
                 disabled
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+                className="w-full h-14 px-4 rounded-xl bg-[#f7f9fb] border-none text-[#191c1e] shadow-inner"
               />
             </div>
 
@@ -156,54 +171,73 @@ export default function KTFormSubmission() {
               </select>
             </div> */}
             <div>
-              <label className="block font-medium mb-2">Department</label>
+              <label className="block text-[13px] font-semibold text-[#464554] uppercase tracking-wide mb-2">
+                Department
+              </label>
               <input
                 type="text"
                 name="department"
                 value={formData.department}
                 disabled
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+                className="w-full h-14 px-4 rounded-xl bg-[#f7f9fb] border-none text-[#191c1e] shadow-inner"
               />
             </div>
 
             {/* Application Type */}
             <div>
-              <label className="block font-medium mb-2">Application Type</label>
+              <label className="block text-[13px] font-semibold text-[#464554] uppercase tracking-wide mb-2">
+                Application Type
+              </label>
               <input
                 type="text"
                 name="type"
                 value={formData.type}
                 disabled
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+                className="w-full h-14 px-4 rounded-xl bg-[#f7f9fb] border-none text-[#191c1e] shadow-inner"
               />
             </div>
             <div>
-              <label htmlFor="moodle_id" className="block font-medium mb-2">Moodle ID</label>
+              <label
+                htmlFor="moodle_id"
+                className="block text-[13px] font-semibold text-[#464554] uppercase tracking-wide mb-2"
+              >
+                Moodle ID
+              </label>
               <input
                 type="text"
                 name="moodle_id"
                 id="moodle_id"
                 value={formData.moodle_id}
                 disabled
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+                className="w-full h-14 px-4 rounded-xl bg-[#f7f9fb] border-none text-[#191c1e] shadow-inner"
               />
             </div>
             <div>
-              <label htmlFor="moodle_id" className="block font-medium mb-2">Mobile Number</label>
+              <label
+                htmlFor="moodle_id"
+                className="block text-[13px] font-semibold text-[#464554] uppercase tracking-wide mb-2"
+              >
+                Mobile Number
+              </label>
               <input
                 type="text"
                 name="mobile_no"
                 id="mobile_no"
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+                className="w-full h-14 px-4 rounded-xl bg-[#f7f9fb] border-none text-[#191c1e] shadow-inner"
               />
             </div>
             <div>
-              <label htmlFor="moodle_id" className="block font-medium mb-2">Previous Seat Number</label>
+              <label
+                htmlFor="moodle_id"
+                className="block text-[13px] font-semibold text-[#464554] uppercase tracking-wide mb-2"
+              >
+                Previous Seat Number
+              </label>
               <input
                 type="text"
                 name="prev_seatno"
                 id="prev_seatno"
-                className="w-full h-12 px-4 rounded-lg bg-gray-100 border border-gray-300"
+                className="w-full h-14 px-4 rounded-xl bg-[#f7f9fb] border-none text-[#191c1e] shadow-inner"
               />
             </div>
 
@@ -225,7 +259,7 @@ export default function KTFormSubmission() {
 
             {/* Full name input */}
             <div className="md:col-span-2">
-              <label className="block font-medium mb-2">
+              <label className="block text-[14px] font-bold text-[#191c1e] mb-4">
                 Student Name (in Full)
               </label>
               <input
@@ -233,7 +267,7 @@ export default function KTFormSubmission() {
                 value={formData.reason}
                 onChange={handleChange}
                 placeholder="Surname Full-Name Father's-Name Mother's-Name"
-                className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full h-14 px-4 rounded-xl bg-[#f7f9fb] border-none text-[#191c1e] shadow-inner"
                 required
               />
             </div>
@@ -241,7 +275,7 @@ export default function KTFormSubmission() {
 
             {/* KT PAPER TABLE */}
              <div className="md:col-span-2">
-              <label className="block font-medium mb-2">
+              <label className="block text-[14px] font-bold text-[#191c1e] mb-4">
                 I would like to appear in the following exams...
               </label>
               <KTTableWrapper/>
@@ -249,7 +283,7 @@ export default function KTFormSubmission() {
 
             {/* PREV EXAM DETAIL TABLE */}
              <div className="md:col-span-2">
-              <label className="block font-medium mb-2">
+              <label className="block text-[14px] font-bold text-[#191c1e] mb-4">
                 Details of Lower Examinations (Attach all Marksheets)
               </label>
               <PrevExamTableWrapper/>
@@ -257,11 +291,11 @@ export default function KTFormSubmission() {
             
             {/* Upload Documents */}
             <div className="md:col-span-2">
-              <label className="block font-medium mb-2">
+              <label className="block text-[14px] font-bold text-[#191c1e] mb-4">
                 Upload Required Documents
               </label>
-              <label className="flex items-center justify-center w-full h-14 px-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                <span className="text-gray-600">
+              <label className="flex items-center justify-center w-full h-24 px-4 border-2 border-dashed border-[#c7c4d7] rounded-[16px] cursor-pointer bg-[#f7f9fb] hover:bg-[#e3dfff]/30 transition-colors group">
+                <span className="text-[#464554] font-medium group-hover:text-[#2a14b4]">
                   {formData.documents ? formData.documents.name : "Choose File"}
                 </span>
                 <input
@@ -275,28 +309,32 @@ export default function KTFormSubmission() {
               </label>
             </div>
 
-            <div className="md:col-span-2 gap-4">
-              <input type="checkbox" id="checkbox" className="gap-4"/>
-              Also I am aware that if any from above subjects get cleared in revaluation, 
-                I will immediately inform to Exam Section by submitting the proof.
+            <div className="md:col-span-2">
+              <label className="flex items-start gap-3 rounded-xl bg-[#f7f9fb] p-4 text-[#464554]">
+                <input type="checkbox" id="checkbox" className="mt-1" />
+                <span>
+                  Also I am aware that if any from above subjects get cleared in revaluation,
+                  I will immediately inform to Exam Section by submitting the proof.
+                </span>
+              </label>
             </div>
              
 
             {/* Buttons */}
-            <div className="md:col-span-2 flex justify-end gap-4 mt-8">
+            <div className="md:col-span-2 flex justify-end gap-4 mt-8 pt-6 border-t border-[#f2f4f6]">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-6 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                className="px-6 py-3 rounded-xl bg-transparent text-[#464554] font-semibold hover:bg-[#f2f4f6] transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`px-6 py-2.5 rounded-lg border ${
+                className={`px-8 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(42,20,180,0.3)] transition-all ${
                   loading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-indigo-900 text-white hover:bg-indigo-800"
+                    ? "bg-[#c7c4d7] text-white cursor-not-allowed shadow-none"
+                    : "bg-gradient-to-br from-[#2a14b4] to-[#4338ca] text-white hover:shadow-[0_6px_20px_rgba(42,20,180,0.4)] hover:-translate-y-0.5"
                 }`}
               >
                 {loading ? "Submitting..." : "Submit"}

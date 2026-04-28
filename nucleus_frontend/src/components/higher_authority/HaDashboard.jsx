@@ -3,6 +3,7 @@ import api from "../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import {
+  ArrowLeft,
   FileText,
   Clock,
   CheckCircle as CheckCircleIcon,
@@ -305,9 +306,10 @@ export default function HodDashboard() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <button
                 onClick={() => navigate(-1)}
-                className="px-5 py-2.5 bg-transparent text-[#464554] font-semibold rounded-xl hover:bg-[#e0e3e5] transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#464554] font-semibold shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:bg-[#f2f4f6] transition-colors"
               >
-                ← Back
+                <ArrowLeft className="h-4 w-4" />
+                Back
               </button>
 
               <div>

@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api, { buildApiUrl } from "../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -8,6 +8,7 @@ import {
   Clock,
   CheckCircle as CheckCircleIcon,
   TrendingUp,
+  ArrowLeft,
   Eye,
   XCircle,
   Edit,
@@ -31,6 +32,7 @@ const StatCard = ({ title, value, icon: Icon, color, iconColor }) => (
 );
 
 export default function InchargeDashboard() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const branchFilter = searchParams.get("branch");
 
@@ -298,14 +300,25 @@ export default function InchargeDashboard() {
 
       <div className="bg-[#f7f9fb] min-h-screen px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
         <div className="max-w-7xl mx-auto space-y-10">
-          <div>
-            <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-2">
-              Incharge Dashboard
-            </h1>
-            <p className="text-[#464554] text-lg">
-              Manage operations and applications
-            </p>
-          </div>
+          <header className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#464554] font-semibold shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:bg-[#f2f4f6] transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+
+            <div>
+              <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-2">
+                Incharge Dashboard
+              </h1>
+              <p className="text-[#464554] text-lg">
+                Manage operations and applications
+              </p>
+            </div>
+          </header>
 
           {/* ===== STATUS CARDS ===== */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">

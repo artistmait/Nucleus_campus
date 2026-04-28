@@ -4,7 +4,7 @@ import Footer from "../../main/Footer";
 import api from "../../../config/api";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 export default function MarksheetCorrectionForm() {
   const navigate = useNavigate();
@@ -95,6 +95,16 @@ export default function MarksheetCorrectionForm() {
       <Navbar />
       <main className="flex-grow w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-8 lg:py-12 pb-24">
         <ToastContainer position="top-right" autoClose={3000} />
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#464554] font-semibold shadow-[0_4px_20px_rgba(49,46,129,0.04)] hover:bg-[#f2f4f6] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+        </div>
         <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#191c1e] tracking-tight leading-tight mb-8">
           Marksheet Correction Request
         </h1>
