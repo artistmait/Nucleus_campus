@@ -19,7 +19,8 @@ dump.rdb
 # IDE files
 .vscode/
 .idea/
-
+debug_output
+sample
 # OS files
 .DS_Store
 Thumbs.db
