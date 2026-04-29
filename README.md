@@ -45,20 +45,20 @@ NUCLEUS addresses these issues through digitized workflows, centralized tracking
 
 ```mermaid
 flowchart LR
-    U[Students / Staff / Authorities] --> FE[React Frontend (Vite)]
-    FE --> API[Node.js + Express API]
-    API --> DB[(PostgreSQL + Prisma)]
-    API --> ML[Flask ML Service]
-    API --> EXT[External Services\nEmail / Cloudinary / OAuth]
+    U[Students Staff Authorities] --> FE[React Frontend]
+    FE --> API[Node Express API]
+    API --> DB[(PostgreSQL Prisma)]
+    API --> ML[Flask Service]
+    API --> EXT[External Services]
 
     ML --> API
     API --> FE
 
     subgraph Core Modules
-      M1[Applications\nTranscript / Revaluation / Clearance]
-      M2[Role-based Processing\nIncharge / Higher Authority]
-      M3[Notifications & Audit Trail]
-      M4[Feedback & Sentiment Analysis]
+      M1[Applications Transcript Revaluation Clearance]
+      M2[Role Processing Incharge Higher Authority]
+      M3[Notifications Audit Trail]
+      M4[Feedback Sentiment Analysis]
     end
 
     API --> M1
