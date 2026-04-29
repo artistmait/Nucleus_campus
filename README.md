@@ -1,24 +1,24 @@
 # NUCLEUS
 
-NUCLEUS is a cloud-native, centralized platform designed to simplify and modernize academic administrative workflows. It integrates major institutional units such as the library, exam section, and admin office into a single coordinated system where students can submit requests, track status, and receive updates in real time, while staff and higher authorities process applications digitally.
+NUCLEUS is a cloud-based platform that makes college administration simpler, faster, and transparent. It brings units like the library, exam section, and admin office into one system where students can apply for services, track progress, and get real-time updates while staff and authorities process requests digitally.
 
 ---
 
 ## Abstract
 
-NUCLEUS is a centralized platform developed to streamline academic administration across departments. Students can request services such as transcripts, revaluation forms, and clearances, then monitor request progress through a digital dashboard.
+NUCLEUS streamlines academic administration by connecting departments on one platform. Students can request transcripts, revaluation, and clearance services, and track every step from a single dashboard.
 
-Faculty, office staff, and higher authorities (for example, HODs, registrars, and principals) can review and process requests online, reducing paper usage, manual effort, and operational delays. The platform includes an audit trail for transparency and accountability, along with real-time alerts at every stage to prevent bottlenecks.
+Faculty, staff, and higher authorities (HODs, registrars, principals) can review and approve requests online, reducing paperwork and delays. Built-in audit logs and real-time alerts improve transparency, accountability, and coordination across departments.
 
-The system also includes module-wise sentiment analysis to collect feedback and help institutions measure satisfaction levels, improve service quality, and strengthen accountability.
+The platform also supports module-wise sentiment analysis to capture feedback and help institutions improve service quality.
 
 ---
 
 ## Introduction
 
-Many academic institutions still rely on paper-heavy and fragmented request workflows. Processes like transcript applications, revaluation requests, and clearance approvals often involve multiple departments with limited visibility and slow coordination.
+Many institutions still depend on manual, paper-heavy workflows for student services. This often leads to delays, poor visibility, and weak coordination across departments.
 
-NUCLEUS addresses this by providing a cloud-based application lifecycle platform where:
+NUCLEUS solves this through a unified digital workflow where:
 
 - Students submit and track applications digitally.
 - Department staff process and route requests efficiently.
@@ -29,7 +29,7 @@ NUCLEUS addresses this by providing a cloud-based application lifecycle platform
 
 ## Problem Statement
 
-Administrative systems in educational institutions often face the following challenges:
+Educational institutions commonly face these administrative challenges:
 
 - **Manual workflow inefficiencies:** Time-consuming, error-prone processing of forms and approvals.
 - **Lack of transparency:** Limited visibility into request status for students and staff.
@@ -37,7 +37,7 @@ Administrative systems in educational institutions often face the following chal
 - **Underutilized feedback:** Feedback is collected inconsistently and rarely used for improvement.
 - **Unequal access:** Students/staff with physical or logistical constraints face additional barriers.
 
-NUCLEUS solves these challenges through workflow digitization, centralized tracking, and integrated communication.
+NUCLEUS addresses these issues through digitized workflows, centralized tracking, and connected communication.
 
 ---
 
