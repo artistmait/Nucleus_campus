@@ -150,7 +150,7 @@ const LandingPage = () => {
                 procedures.
               </p>
               <a
-                href="#"
+                href="/student/admin-section"
                 className="mt-6 inline-block w-full px-6 py-3 bg-[#f2f4f6] text-[#4338ca] rounded-xl font-semibold hover:bg-[#e3dfff] transition-colors"
               >
                 Go to Admin Office

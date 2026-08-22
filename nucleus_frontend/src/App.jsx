@@ -13,6 +13,8 @@ import MyApplications from "./components/student/exam/MyApplications";
 import KTFormSubmission from "./components/student/exam/KTFormSubmission";
 import { IcLandingPage } from "./components/incharge/IcLandingPage";
 import { HaLandingPage } from "./components/higher_authority/HaLandingPage";
+import LorForm from "./components/student/admin/LorForm";
+import AdminofficeSection from "./components/student/admin/AdminofficeSection";
 
 function App() {
   const router = createBrowserRouter([
@@ -47,6 +49,14 @@ function App() {
         {
           path: "/student/myapplications",
           element: <MyApplications />,
+        },
+        {
+          path: "/student/admin-section",
+          element: <AdminofficeSection />,
+        },
+        {
+          path: "/student/lor-request",
+          element: <LorForm />,
         },
       ],
     },

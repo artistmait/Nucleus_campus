@@ -160,11 +160,30 @@ export default function HodDashboard() {
     return date.toLocaleDateString("en-GB");
   };
 
+  const formatDocumentType = (value) => {
+    if (!value) return "—";
+    const cleaned = String(value)
+      .replace(/[_-]+/g, " ")
+      .replace(/[^\w\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+    if (!cleaned) return "—";
+    return cleaned
+      .split(" ")
+      .map((token) => (token === "lor" ? "LOR" : `${token[0].toUpperCase()}${token.slice(1)}`))
+      .join(" ");
+  };
+
   //Columns
   const columns = [
     { key: "application_id", header: "Application ID" },
     { key: "username", header: "Student Name" },
-    { key: "document_type", header: "Document Type" },
+    {
+      key: "document_type",
+      header: "Document Type",
+      render: (val, row) => formatDocumentType(val || row.type),
+    },
     { key: "incharge_name", header: "Assigned Incharge Name" },
     { key: "incharge_id", header: "Incharge ID" },
     {

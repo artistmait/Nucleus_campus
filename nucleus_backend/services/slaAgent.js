@@ -25,37 +25,9 @@ export const startSlaAgent = () => {
             });
 
             for (const app of breachedApps) {
-                let isCriticalByAI = true;
-
-                if (isCriticalByAI) {
-                    await prisma.application.update({
-                        where: { id: app.id },
-                        data: { priority: 'critical' },
-                    });
-                    console.log(`[SLA Agent] Escalated Application ${app.application_id} to CRITICAL.`);
-
-                    const appLabel = (app.type || "Application")
-                        .replace(/_/g, " ")
-                        .replace(/\b\w/g, (c) => c.toUpperCase());
-
-                    // Notify incharge
-                    if (app.incharge_id) {
-                        await notificationService.sendNotification(
-                            app.incharge_id,
-                            `SLA Alert: ${app.student?.username}'s ${appLabel} (#${app.application_id}) breached SLA. Auto-escalated to CRITICAL.`,
-                            'critical'
-                        );
-                    }
-
-                    // Also notify the student
-                    if (app.student_id) {
-                        await notificationService.sendNotification(
-                            app.student_id,
-                            `Your ${appLabel} application (#${app.application_id}) has been escalated to CRITICAL due to SLA breach.`,
-                            'critical'
-                        );
-                    }
-                }
+                console.log(
+                    `[SLA Agent] Application ${app.application_id} breached SLA. Skipping auto-escalation (HOD-only CRITICAL escalation).`
+                );
             }
         } catch (error) {
             console.error("[SLA Agent] Error:", error);

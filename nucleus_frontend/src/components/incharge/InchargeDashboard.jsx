@@ -63,6 +63,21 @@ export default function InchargeDashboard() {
     }
   };
 
+  const formatDocumentType = (value) => {
+    if (!value) return "—";
+    const cleaned = String(value)
+      .replace(/[_-]+/g, " ")
+      .replace(/[^\w\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+    if (!cleaned) return "—";
+    return cleaned
+      .split(" ")
+      .map((token) => (token === "lor" ? "LOR" : `${token[0].toUpperCase()}${token.slice(1)}`))
+      .join(" ");
+  };
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
@@ -180,7 +195,11 @@ export default function InchargeDashboard() {
   const submittedColumns = [
     { key: "application_id", header: "Application ID" },
     { key: "student_name", header: "Student Name" },
-    { key: "type", header: "Type" },
+    {
+      key: "type",
+      header: "Type",
+      render: (val) => formatDocumentType(val),
+    },
     {
       key: "priority",
       header: "Priority",
@@ -240,7 +259,11 @@ export default function InchargeDashboard() {
   const reviewedColumns = [
     { key: "application_id", header: "Application ID" },
     { key: "student_name", header: "Student Name" },
-    { key: "type", header: "Type" },
+    {
+      key: "type",
+      header: "Type",
+      render: (val) => formatDocumentType(val),
+    },
     {
       key: "priority",
       header: "Priority",

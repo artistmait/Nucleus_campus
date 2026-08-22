@@ -38,6 +38,7 @@ model User {
   studentApplications  Application[]  @relation("StudentApplications")
   documents            Document[]
   feedbacks            Feedback[]
+  lorForms             LorForm[]
   notifications        Notification[]
   department           Department?    @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   role                 Role?          @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -75,8 +76,34 @@ model Application {
   incharge       User?       @relation("InchargeApplications", fields: [incharge_id], references: [id], onUpdate: NoAction)
   student        User        @relation("StudentApplications", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   department     Department? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_department")
+  lorForm        LorForm?
 
   @@map("applications")
+}
+
+model LorForm {
+  id             Int         @id @default(autoincrement())
+  application_id Int         @unique
+  student_id     Int
+  student_name   String?     @db.VarChar(200)
+  address        String?
+  mobile_no      String?     @db.VarChar(20)
+  email          String?     @db.VarChar(255)
+  yr_admission   Int?
+  dse_ornot      String?     @db.VarChar(30)
+  branch         String?     @db.VarChar(100)
+  current_status String?     @db.VarChar(20)
+  current_yr     String?     @db.VarChar(20)
+  lor_staff      String[]    @default([])
+  no_of_lors     Int?
+  total_amount   Int?
+  payment_date   DateTime?   @db.Date
+  created_at     DateTime?   @default(now()) @db.Timestamp(6)
+  application    Application @relation(fields: [application_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  student        User        @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([student_id], map: "idx_lor_form_student_id")
+  @@map("lor_form")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

@@ -33,16 +33,56 @@ const uploadToCloudinary = (file) =>
 
 export const submitApplication = async (req, res) => {
   try {
-    const { student_id, type, department_id } = req.body;
+    const {
+      student_id,
+      type,
+      department,
+      department_id,
+      student_name,
+      address,
+      mobile_no,
+      email,
+      yr_admission,
+      dse_ornot,
+      current_status,
+      current_yr,
+      lor_staff,
+      no_of_lors,
+      payment_date,
+    } = req.body;
 
-    if (!req.file) {
+    const normalizedType = (type || "").toLowerCase();
+    const requiresDocument = normalizedType !== "lor_request";
+
+    if (requiresDocument && !req.file) {
       return res
         .status(400)
         .json({ success: false, message: "Document is required" });
     }
 
-    // Upload to Cloudinary from memory buffer
-    const uploadResult = await uploadToCloudinary(req.file);
+    const admissionYear = parseInt(yr_admission, 10);
+    const copiesRequested = parseInt(no_of_lors, 10);
+    const parsedAdmissionYear = Number.isNaN(admissionYear) ? null : admissionYear;
+    const parsedCopies = Number.isNaN(copiesRequested) ? null : copiesRequested;
+    const totalAmount = parsedCopies ? parsedCopies * 10 : null;
+
+    let staffList = [];
+    if (Array.isArray(lor_staff)) {
+      staffList = lor_staff;
+    } else if (typeof lor_staff === "string" && lor_staff.trim()) {
+      try {
+        const parsed = JSON.parse(lor_staff);
+        staffList = Array.isArray(parsed) ? parsed : [lor_staff];
+      } catch (error) {
+        staffList = [lor_staff];
+      }
+    }
+    staffList = staffList.map((name) => String(name).trim()).filter(Boolean);
+
+    const paymentDateValue = payment_date ? new Date(payment_date) : null;
+
+    // Upload to Cloudinary from memory buffer when a file is present
+    const uploadResult = req.file ? await uploadToCloudinary(req.file) : null;
 
     // Use Prisma interactive transaction
     const application = await prisma.$transaction(async (tx) => {
@@ -61,13 +101,15 @@ export const submitApplication = async (req, res) => {
       const priority = role_id === 4 ? "high" : "normal";
 
       // Insert into documents table
-      const newDocument = await tx.document.create({
-        data: {
-          student_id: parseInt(student_id),
-          document_type: type,
-          cloudinary_url: uploadResult.secure_url,
-        },
-      });
+      const newDocument = uploadResult
+        ? await tx.document.create({
+            data: {
+              student_id: parseInt(student_id),
+              document_type: type,
+              cloudinary_url: uploadResult.secure_url,
+            },
+          })
+        : null;
 
       // Assign random incharge
       const incharges = await tx.user.findMany({
@@ -95,7 +137,7 @@ export const submitApplication = async (req, res) => {
         data: {
           student_id: parseInt(student_id),
           incharge_id,
-          document_id: newDocument.id,
+          document_id: newDocument?.id,
           type,
           status: "pending",
           stage: "submitted",
@@ -105,6 +147,37 @@ export const submitApplication = async (req, res) => {
           application_id: newapp_id,
         },
       });
+
+      if (normalizedType === "lor_request") {
+        const departmentName = department_id
+          ? (
+              await tx.department.findUnique({
+                where: { id: parseInt(department_id) },
+                select: { dept_name: true },
+              })
+            )?.dept_name || null
+          : null;
+
+        await tx.lorForm.create({
+          data: {
+            application_id: newApp.id,
+            student_id: parseInt(student_id),
+            student_name: student_name || null,
+            address: address || null,
+            mobile_no: mobile_no || null,
+            email: email || null,
+            yr_admission: parsedAdmissionYear,
+            dse_ornot: dse_ornot || null,
+            branch: departmentName,
+            current_status: current_status || null,
+            current_yr: current_yr || null,
+            lor_staff: staffList,
+            no_of_lors: parsedCopies,
+            total_amount: totalAmount,
+            payment_date: paymentDateValue,
+          },
+        });
+      }
 
       return newApp;
     });
